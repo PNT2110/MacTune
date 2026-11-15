@@ -40,6 +40,56 @@ public static class BootCampFixesService
             || desc.Contains("Intel(R) Display Audio", StringComparison.OrdinalIgnoreCase);
     }
 
+    public static int CountMatchingAudioAdapters()
+    {
+        try
+        {
+            using var cls = Registry.LocalMachine.OpenSubKey(AudioClassKey);
+            if (cls is null) return 0;
+            int matched = 0;
+            foreach (var sub in cls.GetSubKeyNames())
+            {
+                if (sub.Length != 4 || !sub.All(char.IsDigit)) continue;
+                using var drv = cls.OpenSubKey(sub);
+                if (!IsTargetAudioAdapter(drv?.GetValue("DriverDesc") as string)) continue;
+                using var ps = drv?.OpenSubKey("PowerSettings");
+                if (ps?.GetValue("ConservationIdleTime") is byte[] { Length: 4 }) matched++;
+            }
+            return matched;
+        }
+        catch { return 0; }
+    }
+
+    public static int CountMatchingWirelessAdapters()
+    {
+        try
+        {
+            int count = 0;
+            using (var btCls = Registry.LocalMachine.OpenSubKey(BluetoothClassKey))
+            {
+                if (btCls is not null)
+                    foreach (var sub in btCls.GetSubKeyNames())
+                    {
+                        if (sub.Length != 4 || !sub.All(char.IsDigit)) continue;
+                        using var k = btCls.OpenSubKey(sub);
+                        if (IsTargetBluetoothRadio(k?.GetValue("DriverDesc") as string)) count++;
+                    }
+            }
+            using (var netCls = Registry.LocalMachine.OpenSubKey(NetworkClassKey))
+            {
+                if (netCls is not null)
+                    foreach (var sub in netCls.GetSubKeyNames())
+                    {
+                        if (sub.Length != 4 || !sub.All(char.IsDigit)) continue;
+                        using var k = netCls.OpenSubKey(sub);
+                        if (IsTargetWifiAdapter(k?.GetValue("DriverDesc") as string)) count++;
+                    }
+            }
+            return count;
+        }
+        catch { return 0; }
+    }
+
     public static bool IsAudioPopFixed()
     {
         try

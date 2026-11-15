@@ -92,6 +92,7 @@ public partial class MainWindow : Window
         InitFeatures();
         Mark("features");
         InitNewFeatures();
+        InitDiagnostics();
         Mark("new features");
         LoadTimers();
         LoadLid();
@@ -123,6 +124,7 @@ public partial class MainWindow : Window
         BuildFanTiles();
         RestoreFanMode();
         LoadChargeLimit();
+        await InitHardwareProbesAsync();
 
         _timer.Tick += async (_, _) => await TickAsync();
         _timer.Start();
@@ -159,7 +161,8 @@ public partial class MainWindow : Window
         var navs = new[] { NavOverview, NavPerf, NavBattery, NavFans, NavAuto, NavClean, NavSystem, NavSettings };
         for (int i = 0; i < pages.Length; i++)
             pages[i].Visibility = navs[i] == sender ? Visibility.Visible : Visibility.Collapsed;
-        if (sender == NavSystem) { _ = RefreshProcessesAsync(); RefreshGpuList(); LoadTimers(); LoadLid(); SyncInputControls(); _ = RefreshBcFixesUiAsync(); }
+        if (sender == NavPerf) RefreshBackupUi();
+        if (sender == NavSystem) { _ = RefreshProcessesAsync(); RefreshGpuList(); LoadTimers(); LoadLid(); SyncInputControls(); _ = RefreshBcFixesUiAsync(); _ = RefreshCompatibilityUiAsync(); }
         if (sender == NavClean) { RefreshStartup(); ShowMemory(); ShowDrives(); _ = RefreshBootOptUiAsync(); }
         if (sender == NavBattery) ShowEstimates();
         if (sender == NavAuto) RefreshRules();
@@ -204,6 +207,7 @@ public partial class MainWindow : Window
             ShowSensors(merged);
             UpdatePowerFlow(merged, smcPwr, _lastBat);
             ShowFans(fans);
+            DiagnosticsTick(merged, fans, smcPwr);
 
             if (_fans is not null)
             {
@@ -710,6 +714,7 @@ public partial class MainWindow : Window
         if (_cleanedUp) return;
         _cleanedUp = true;
         _timer.Stop();
+        DisposeDiagnostics();
         DisposeNewFeatures();
         RestoreMeetingOnExit();
         if (_activeRule is not null) EndRule(quiet: true);

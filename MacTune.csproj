@@ -9,24 +9,17 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>1.1.0</Version>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
+    <Version>1.2.0</Version>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Deterministic>true</Deterministic>
     <PathMap>$(MSBuildProjectDirectory)=/src</PathMap>
     <Product>MacTune</Product>
     <Description>Control center for Intel Macs running Windows through Boot Camp</Description>
     <Copyright>GPL-3.0-or-later</Copyright>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
-
-  <ItemGroup>
-    <!-- third-party Touch Bar project lives in touchbar/ and is built separately -->
-    <Compile Remove="touchbar\**" />
-    <None Remove="touchbar\**" />
-    <Page Remove="touchbar\**" />
-    <Content Remove="touchbar\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <!-- Avoid WPF/WinForms name clashes; WinForms types are used fully qualified -->

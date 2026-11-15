@@ -1,9 +1,15 @@
-# Build output
+# Build & package output
 bin/
 obj/
 dist/
-*.user
-.vs/
+TestResults/
 
-# Local experiments with third-party Touch Bar projects (not part of MacTune, not redistributable here)
-touchbar/
+# IDE & OS junk
+.vs/
+.vscode/
+*.user
+*.suo
+*.log
+*.tmp
+Thumbs.db
+.DS_Store

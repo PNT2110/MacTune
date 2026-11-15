@@ -84,7 +84,24 @@ public partial class MainWindow
         if (s is null) return;
         int src = _lastBat?.PluggedIn == false ? 1 : 0;
         bool turboOff = _boost[src] == 0 || (_max[src] >= 0 && _max[src] < 100);
-        _throttle.Sample(s.CpuPackageTemp, s.CpuMaxClockMHz, s.CpuLoad, s.CpuPackagePower, src == 1, turboOff);
+
+        var msr = _msrProbe?.Read();
+        double? boardTemp = s.Temps.FirstOrDefault(t => t.Name.Contains("Bo mạch", StringComparison.OrdinalIgnoreCase)).Celsius;
+        if (boardTemp is <= 0) boardTemp = null;
+
+        _throttle.Sample(
+            tempC: s.CpuPackageTemp,
+            clockMHz: s.CpuMaxClockMHz,
+            loadPct: s.CpuLoad,
+            powerW: s.CpuPackagePower,
+            onBattery: src == 1,
+            turboOff: turboOff,
+            msr: msr,
+            adapterRatedWatts: _lastSmcPower?.AdapterRatedWatts,
+            boardTempC: boardTemp);
+
+        RefreshThrottleHeaderUi(msr);
+        UpdateThrottleDomainPills(_throttle.LastDiagnosis, msr?.Available == true);
 
         if (_throttle.Events.Count != _throttleShown)
         {

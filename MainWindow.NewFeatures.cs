@@ -251,6 +251,12 @@ public partial class MainWindow
 
     public void SetTouchBarFn(bool fnDefault)
     {
+        if (_compatReport is not null && !_compatReport.CanWrite("TouchBar"))
+        {
+            SyncInputControls();
+            ShowToast("Máy này không có Touch Bar");
+            return;
+        }
         _tbFnDefault = fnDefault;
         bool live = false;
         try { live = AppleKeyboardService.SetTouchBarFnDefault(fnDefault); } catch { }

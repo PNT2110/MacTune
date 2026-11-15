@@ -22,6 +22,11 @@ public sealed class KeyboardBacklightService : IDisposable
 
     public static KeyboardBacklightService? TryOpen(out string? error)
     {
+        if (!HardwareCompatibilityService.IsAppleSystem())
+        {
+            error = "không phải máy Mac Apple";
+            return null;
+        }
         try
         {
             foreach (var d in DeviceList.Local.GetHidDevices(0x05ac, 0x8102))

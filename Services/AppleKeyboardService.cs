@@ -33,6 +33,34 @@ public static class AppleKeyboardService
     [DllImport("kernel32.dll")]
     static extern bool CloseHandle(IntPtr hObject);
 
+    /// <summary>True when at least one Apple keyboard / Touch Bar kernel device responds or KeyMagic service exists.</summary>
+    public static bool HasTouchBarDriverDevice()
+    {
+        foreach (var dev in AppleDevices)
+        {
+            IntPtr h = CreateFileW(dev, 0x80000000u, 3u, IntPtr.Zero, 3u, 0u, IntPtr.Zero);
+            if (h != IntPtr.Zero && h != new IntPtr(-1))
+            {
+                CloseHandle(h);
+                return true;
+            }
+        }
+        try
+        {
+            using var km = Registry.LocalMachine.OpenSubKey(HklmKeyMagic);
+            if (km is not null) return true;
+        }
+        catch { }
+        return false;
+    }
+
+    public static bool IsTouchBarSupportedOnThisMac()
+    {
+        var (mfg, model) = HardwareCompatibilityService.ReadBiosIdentity();
+        if (!HardwareCompatibilityService.IsAppleModel(mfg, model)) return false;
+        return HardwareCompatibilityService.ModelSupportsTouchBar(model) || HasTouchBarDriverDevice();
+    }
+
     /// <summary>
     /// Returns true if Touch Bar defaults to F1–F12 keys (OSXFnBehavior == 0),
     /// false if Touch Bar defaults to Media / Brightness Control Strip (OSXFnBehavior == 1).
@@ -60,9 +88,11 @@ public static class AppleKeyboardService
     /// <summary>
     /// Switches Touch Bar immediately between F1–F12 default (fnDefault=true, OSXFnBehavior=0)
     /// and Media/Brightness Control Strip default (fnDefault=false, OSXFnBehavior=1).
+    /// Fail-closed: refuses to write on non-Apple or non-Touch-Bar Macs.
     /// </summary>
     public static bool SetTouchBarFnDefault(bool fnDefault)
     {
+        if (!IsTouchBarSupportedOnThisMac()) return false;
         int osxVal = fnDefault ? 0 : 1;
 
         try

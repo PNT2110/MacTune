@@ -21,7 +21,7 @@ public record SmcPowerInfo(double? DcInWatts, double? SystemWatts, int? AdapterR
 /// Protocol per SimpleMacFan; T2 fan key family (flt + per-fan F{i}Md) per BootCampPerformanceControl docs
 /// (validated on MacBookPro16,1). Every write is gated by the key's reported type, size and writable attribute.
 /// </summary>
-public sealed class SmcService : IDisposable
+public sealed class SmcService : IFanBackend, IDisposable
 {
     // Backend 1: AppleSMC driver (installed by Macs Fan Control). Validated on T2 MacBookPro16,1.
     const uint AsRead = 0x220000, AsWrite = 0x220004, AsInfo = 0x22000C;
@@ -253,9 +253,10 @@ public sealed class SmcService : IDisposable
         };
     }
 
-    /// <summary>Encodes by the key's declared type; refuses non-writable keys or size mismatch.</summary>
+    /// <summary>Encodes by the key's declared type; refuses non-writable keys, size mismatch, or non-Apple hardware.</summary>
     public bool WriteNumber(string key, double value)
     {
+        if (!HardwareCompatibilityService.IsAppleSystem()) return false;
         var info = Info(key);
         if (info is null || !info.Writable) return false;
         byte[]? data = info.Type.TrimEnd() switch
@@ -268,6 +269,31 @@ public sealed class SmcService : IDisposable
         };
         if (data is null || data.Length != info.Size) return false;
         return WriteRaw(key, data);
+    }
+
+    public bool IsHealthy
+    {
+        get
+        {
+            if (_h.IsClosed || _h.IsInvalid) return false;
+            try { return ReadNumber("FNum") is > 0; }
+            catch { return false; }
+        }
+    }
+
+    public bool RevalidateAfterResume()
+    {
+        lock (_lock) _infoCache.Clear();
+        if (IsHealthy) return true;
+        if (_kind == Kind.PawnIo && !_h.IsClosed && !_h.IsInvalid)
+        {
+            try
+            {
+                if (LoadT2Module(out _)) return IsHealthy;
+            }
+            catch { }
+        }
+        return false;
     }
 
     static byte[] BE16(ushort v) => new[] { (byte)(v >> 8), (byte)v };

@@ -369,6 +369,41 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
+
+                    <!-- Power Plan Backup & Restore + CPU CSV Performance Logger -->
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+
+                        <Border Style="{StaticResource CardBox}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource CardTitle}" Text="💾  Sao lưu &amp; Khôi phục Power Plan"/>
+                                <TextBlock x:Name="BackupStatusText" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,12"
+                                           Text="Tự động sao lưu nguyên trạng trước khi thay đổi."/>
+                                <WrapPanel>
+                                    <Button x:Name="BtnBackupNow" Content="Sao lưu hiện tại" Margin="0,0,8,6" Click="BackupNow_Click"/>
+                                    <Button x:Name="BtnRestoreBaseline" Style="{StaticResource Primary}" Content="Khôi phục nguyên trạng" Margin="0,0,8,6" Click="RestoreBaseline_Click"/>
+                                    <Button x:Name="BtnRestoreManual" Content="Khôi phục bản thủ công" Margin="0,0,0,6" Visibility="Collapsed" Click="RestoreManual_Click"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Style="{StaticResource CardBox}">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,8">
+                                    <ComboBox x:Name="CbLogInterval" DockPanel.Dock="Right" Width="92" SelectionChanged="LogInterval_Changed"/>
+                                    <TextBlock Style="{StaticResource CardTitle}" Text="📊  Nhật ký hiệu năng CPU (CSV)" Margin="0" VerticalAlignment="Center"/>
+                                </DockPanel>
+                                <TextBlock x:Name="CsvLogStatsText" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"
+                                           Text="Lưu nhiệt độ, xung, công suất và tải CPU thành CSV để đối chiếu."/>
+                                <WrapPanel>
+                                    <Button x:Name="BtnToggleCsv" Style="{StaticResource Primary}" Content="⏺ Bắt đầu ghi CSV" Margin="0,0,8,6" Click="ToggleCsvLog_Click"/>
+                                    <Button x:Name="BtnOpenCsvFile" Content="Mở CSV" IsEnabled="False" Margin="0,0,8,6" Click="OpenCsvFile_Click"/>
+                                    <Button Content="Mở thư mục" Margin="0,0,0,6" Click="OpenCsvFolder_Click"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="CsvLogPathText" Style="{StaticResource Muted}" FontSize="11.5" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
                 </StackPanel>
 
                 <!-- ===== Battery ===== -->
@@ -526,9 +561,33 @@
                         <Border Grid.Column="1" Style="{StaticResource CardBox}">
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,6">
-                                    <TextBlock x:Name="ThrottleBadge" DockPanel.Dock="Right" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource Accent}"/>
-                                    <TextBlock Style="{StaticResource CardTitle}" Text="Hạ xung CPU" Margin="0"/>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border x:Name="ThrottleSourceBadge" CornerRadius="7" Padding="8,2.5" Background="{StaticResource SubtleBg}">
+                                            <TextBlock x:Name="ThrottleSourceBadgeText" Text="Cảm biến" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource CardTitle}" Text="Chẩn đoán hạ xung CPU" Margin="0"/>
                                 </DockPanel>
+
+                                <TextBlock x:Name="ThrottleBadge" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource Orange}" Margin="0,0,0,4"/>
+                                <TextBlock x:Name="ThrottlePlInfo" Style="{StaticResource Muted}" FontSize="11.5" Margin="0,0,0,6" Visibility="Collapsed"/>
+
+                                <!-- 4-domain live diagnostic chips: Thermal, Power Limit, Current Limit, Firmware -->
+                                <UniformGrid Columns="2" Margin="-3,0,-3,8">
+                                    <Border x:Name="PillThermBox" Background="{StaticResource SubtleBg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="8,5" Margin="3">
+                                        <TextBlock x:Name="PillThermText" Text="🌡 Thermal (Nhiệt)" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}"/>
+                                    </Border>
+                                    <Border x:Name="PillPowerBox" Background="{StaticResource SubtleBg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="8,5" Margin="3">
+                                        <TextBlock x:Name="PillPowerText" Text="⚡ Power Limit" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}"/>
+                                    </Border>
+                                    <Border x:Name="PillCurrentBox" Background="{StaticResource SubtleBg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="8,5" Margin="3">
+                                        <TextBlock x:Name="PillCurrentText" Text="🔌 Current (EDP)" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}"/>
+                                    </Border>
+                                    <Border x:Name="PillFwBox" Background="{StaticResource SubtleBg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="8,5" Margin="3">
+                                        <TextBlock x:Name="PillFwText" Text="🛡 Firmware / SMC" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}"/>
+                                    </Border>
+                                </UniformGrid>
+
                                 <ItemsControl x:Name="ThrottleList">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -536,18 +595,51 @@
                                                 <DockPanel>
                                                     <TextBlock DockPanel.Dock="Right" Text="{Binding Duration}" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                                                     <StackPanel>
-                                                        <TextBlock FontSize="12.5"><Run Text="{Binding Time, Mode=OneWay}" FontWeight="SemiBold"/><Run Text=" · "/><Run Text="{Binding Reason, Mode=OneWay}" Foreground="{StaticResource Orange}"/></TextBlock>
-                                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}"/>
+                                                        <TextBlock FontSize="12.5" TextWrapping="Wrap"><Run Text="{Binding Time, Mode=OneWay}" FontWeight="SemiBold"/><Run Text=" · "/><Run Text="{Binding Reason, Mode=OneWay}" Foreground="{StaticResource Orange}"/></TextBlock>
+                                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" TextWrapping="Wrap"/>
                                                     </StackPanel>
                                                 </DockPanel>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock x:Name="ThrottleEmpty" Style="{StaticResource Muted}" Text="Không có hạ xung."/>
+                                <TextBlock x:Name="ThrottleEmpty" Style="{StaticResource Muted}" Text="Không có hạ xung." TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
                     </Grid>
+
+                    <!-- Fan Safety Self-Test Card -->
+                    <Border Style="{StaticResource CardBox}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <Button x:Name="BtnFanSafetyTest" DockPanel.Dock="Right" Style="{StaticResource Primary}" Content="🛡 Kiểm thử an toàn" Padding="13,6" Margin="0" Click="RunFanSafetyTest_Click"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource CardTitle}" Text="🛡  Kiểm thử an toàn quạt (Watchdog · Sleep · Driver)" Margin="0"/>
+                                    <TextBlock x:Name="FanSafetySummaryText" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,3,10,0"
+                                               Text="Kiểm tra tự động trả quạt về Apple khi app treo, mất driver SMC, chuyển sang Sleep và thức dậy Resume."/>
+                                </StackPanel>
+                            </DockPanel>
+
+                            <ItemsControl x:Name="FanSafetyList" Visibility="Collapsed" Margin="0,6,0,0">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource SubtleBg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10" Padding="11,8" Margin="0,4,8,4">
+                                            <StackPanel>
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Right" CornerRadius="6" Padding="7,2" Background="{Binding BadgeBg}">
+                                                        <TextBlock Text="{Binding Badge}" FontSize="11" FontWeight="SemiBold" Foreground="{Binding BadgeFg}"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
+                                                </DockPanel>
+                                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" FontSize="11.5" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <!-- ===== System ===== -->
@@ -694,6 +786,39 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <TextBlock x:Name="GpuEmpty" Style="{StaticResource Muted}" Text="Chưa có ứng dụng."/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Hardware Compatibility & Pre-Write Verification Matrix -->
+                    <Border Style="{StaticResource CardBox}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <Border x:Name="CompatArchBadge" DockPanel.Dock="Right" CornerRadius="8" Padding="10,4" Background="{StaticResource AccentSoft}" VerticalAlignment="Center">
+                                    <TextBlock x:Name="CompatArchBadgeText" Text="Đang kiểm tra…" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource Accent}"/>
+                                </Border>
+                                <TextBlock Style="{StaticResource CardTitle}" Text="🧩  Tương thích phần cứng" Margin="0" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <TextBlock x:Name="CompatSubtitle" Style="{StaticResource Muted}" Margin="0,0,0,8" TextWrapping="Wrap"
+                                       Text="Xác minh từng thành phần trên dòng máy Mac trước khi cho phép ghi xuống phần cứng."/>
+
+                            <ItemsControl x:Name="CompatList">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource SubtleBg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10" Padding="11,8" Margin="0,4,8,4">
+                                            <StackPanel>
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Right" CornerRadius="6" Padding="7,2" Background="{Binding BadgeBg}">
+                                                        <TextBlock Text="{Binding Badge}" FontSize="11" FontWeight="SemiBold" Foreground="{Binding BadgeFg}"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
+                                                </DockPanel>
+                                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" FontSize="11.5" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </Border>
 

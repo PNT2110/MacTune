@@ -142,9 +142,38 @@ public partial class MainWindow
         _tray?.ShowBalloonTip(5000, Loc.T(title), Loc.T(text), System.Windows.Forms.ToolTipIcon.Info);
     }
 
-    // ================= Auto switch on AC / DC =================
+    // ================= Auto switch on AC / DC + Sleep / Resume safety =================
     void OnPowerModeChanged(object? sender, PowerModeChangedEventArgs e)
     {
+        if (e.Mode == PowerModes.Suspend)
+        {
+            // Hand fans back to Apple firmware synchronously BEFORE standby begins
+            _fans?.OnSystemSuspend();
+            _fanWatchdog?.Heartbeat();
+            return;
+        }
+        if (e.Mode == PowerModes.Resume)
+        {
+            _fanWatchdog?.Heartbeat();
+            Dispatcher.BeginInvoke(async () =>
+            {
+                await Task.Delay(2000); // allow T2 / PCIe / USB-SPI devices to settle after wake
+                _fanWatchdog?.Heartbeat();
+                _msrProbe?.TryConnect();
+                if (_fans is not null)
+                {
+                    bool ok = await Task.Run(() => _fans.OnSystemResume());
+                    if (!ok)
+                    {
+                        SelectFanTile(FanMode.Auto);
+                        FixedPanel.Visibility = Visibility.Collapsed;
+                    }
+                    FanStatus.Text = _fans.Status;
+                }
+                await RefreshCompatibilityUiAsync();
+            });
+            return;
+        }
         if (e.Mode != PowerModes.StatusChange) return;
         Dispatcher.BeginInvoke(() =>
         {

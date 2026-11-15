@@ -51,6 +51,7 @@ public static class PowerService
 
     public static void EnsureAndActivate(string guid, string name)
     {
+        PowerPlanBackupService.EnsureBaselineBeforeChange();
         if (!PlanExists(guid))
         {
             string basePlan = ActivePlanGuid();
@@ -63,6 +64,7 @@ public static class PowerService
 
     static void SetAcrossPlans(string sub, string alias, int ac, int dc)
     {
+        PowerPlanBackupService.EnsureBaselineBeforeChange();
         string list = Run("/l");
         var targets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string active = ActivePlanGuid();
@@ -80,12 +82,12 @@ public static class PowerService
         Run("/setactive SCHEME_CURRENT");
     }
 
-    /// <summary>Reads (AC, DC) setting index on the active plan (including hidden settings, independent of Windows display language).</summary>
-    static (int Ac, int Dc) QueryAcDc(string sub, string alias)
+    /// <summary>Reads (AC, DC) setting index on the specified scheme (including hidden settings, independent of Windows display language).</summary>
+    public static (int Ac, int Dc) QuerySchemeAcDc(string scheme, string sub, string alias)
     {
         try
         {
-            string text = Run($"/qh SCHEME_CURRENT {sub} {alias}");
+            string text = Run($"/qh {scheme} {sub} {alias}");
             int Parse(string label)
             {
                 var m = Regex.Match(text, label + @"[^:]*:\s*0x([0-9a-fA-F]+)");
@@ -103,6 +105,8 @@ public static class PowerService
         catch (InvalidOperationException) { return (-1, -1); }
     }
 
+    static (int Ac, int Dc) QueryAcDc(string sub, string alias) => QuerySchemeAcDc("SCHEME_CURRENT", sub, alias);
+
     static void Unhide(string alias)
     {
         if (!_unhidden.Add(alias)) return;
@@ -114,6 +118,7 @@ public static class PowerService
 
     public static void Set(string alias, int ac, int dc, bool apply = true)
     {
+        PowerPlanBackupService.EnsureBaselineBeforeChange();
         Unhide(alias);
         Run($"/setacvalueindex SCHEME_CURRENT SUB_PROCESSOR {alias} {ac}");
         Run($"/setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR {alias} {dc}");

@@ -48,13 +48,18 @@ Generic Windows "optimizer" suites sell subscriptions, fake urgency, and backgro
 
 ## Screenshots
 
-### Fans & SMC Thermal Telemetry
-Dual-fan RPM gauges, thermal-smoothed curves (**Auto / Quiet / Balanced / Max cooling / Fixed**) driven by the hotter of CPU & AMD dGPU, all Apple SMC sensors, and live CPU throttling diagnostics.
+### Fans, MSR Throttling Diagnostics & Fan Safety Self-Test
+Dual-fan RPM gauges, thermal-smoothed curves (**Auto / Quiet / Balanced / Max cooling / Fixed**) driven by `max(CPU, AMD dGPU)`, all Apple SMC sensors, **multi-domain CPU throttling diagnostics** (**Thermal**, **Power Limit PL1/PL2**, **Current Limit EDP/IccMax**, and **Firmware / BD PROCHOT** when MSR/SMC telemetry permits), plus an independent **Fan Safety Watchdog & 4-scenario Self-Test** (app hang, lost driver, sleep, resume).
 
 ![Fans and Heat](docs/screenshots/fans-heat.png)
 
-### System & Reversible Boot Camp Fixes
-One-click **Mac-style keys** (`⌘+C/V/Z`, `⌘+Tab` app switcher, `⌃+Tab` tab switcher, `⌘+Q` close window, `⌘+Shift+4` region screenshot, suppressed bare-`Ctrl` Start Menu popups), **Touch Bar** default row (`Media` vs `F1–F12`), **speaker anti-pop**, **Bluetooth/Wi-Fi stability**, **natural external mouse scrolling**, synced sleep/lid/hibernate timers, and per-app GPU selection.
+### CPU Tuning, Power Plan Backup & CSV Performance Logger
+Isolated **Silent / Balanced / Performance** presets, per-source Turbo Boost / min-max state / EPP / core parking, **automatic pre-change Power Plan baseline backup & 1-click restore**, and a built-in **CPU Performance CSV Logger** (temperature, clock, package power, load, GPU, fan RPM, throttle flags) for side-by-side benchmarking.
+
+![Performance Backup and CSV Logger](docs/screenshots/performance.png)
+
+### System, Hardware Compatibility & Reversible Boot Camp Fixes
+Pre-write **Hardware Compatibility Matrix** (verifies exact Mac model & T2/Pre-T2/HID/SMC capabilities before unlocking hardware writes), **Mac-style keys** (`⌘+C/V/Z`, `⌘+Tab` app switcher, `⌃+Tab` tab switcher, `⌘+Q` close window, `⌘+Shift+4` region screenshot, suppressed bare-`Ctrl` Start Menu popups), **Touch Bar** default row (`Media` vs `F1–F12`), **speaker anti-pop**, **Bluetooth/Wi-Fi stability**, **natural external mouse scrolling**, synced sleep/lid/hibernate timers, and per-app GPU selection.
 
 ![System and Boot Camp Fixes](docs/screenshots/system-fixes.png)
 
@@ -78,9 +83,10 @@ Live USB-C charger wattage in, whole-system wattage out, net battery charge/disc
 | Area | Features |
 |---|---|
 | **Overview** | Live CPU temperature, clock and power, USB-C charger input (W), system draw (W), battery level, discrete **AMD Radeon Pro** load / temp / power / VRAM / top apps, 3-minute charts |
-| **Performance** | One-click **Silent / Balanced / Performance** profiles (isolated power plans — existing Windows plans untouched). Per power source: Turbo Boost mode, min/max CPU state, EPP, core parking |
-| **Fans & Heat** | Dual-fan RPM, **Auto / Quiet / Balanced / Max cooling** thermal-smoothed curves (tracking `max(CPU, GPU)`) or fixed speed, all SMC temperature sensors, CPU throttling log with likely cause |
+| **Performance & CSV Log** | One-click **Silent / Balanced / Performance** profiles, per-source Turbo Boost / min-max CPU / EPP / core parking, **automatic baseline Power Plan backup & restore** (`.pow` + indices), and **CSV Performance Logger** (temp, clock, power, load) |
+| **Fans, Safety & Diagnostics** | Dual-fan RPM, thermal-smoothed curves (`max(CPU, GPU)`), **independent Watchdog + Sleep/Resume/Driver-loss safety self-test**, all SMC sensors, and **Throttling Diagnostics** distinguishing **Thermal**, **Power Limit (PL1/PL2)**, **Current Limit (EDP)**, and **Firmware (BD PROCHOT / SMC)** |
 | **Battery** | Health %, cycle count, charger input / system draw / battery net power, time remaining, learned runtime per profile, 1-click Windows HTML battery report |
+| **Hardware Compatibility** | Identifies exact Intel Mac model (`T2` vs `Pre-T2` vs non-Apple PC) and probes SMC, Touch Bar, HID backlight, and Boot Camp drivers **before unlocking hardware writes** |
 | **Boot Camp Fixes** | **Speaker anti-pop** (keeps T2/PortCls amp in `D0`), **Bluetooth & Broadcom Wi-Fi stability** (locks radio power-save & packet coalescing), **Natural mouse scroll** (`FlipFlopWheel`), quick **macOS Startup Disk** launcher |
 | **Mac Input** | Instant **⌘ ↔ Ctrl** swap with native Mac muscle memory: `⌘+Tab` switches apps, `⌃+Tab` switches tabs, `⌘+Q` closes windows, `⌘+Shift+3/4` triggers region screenshot (`Win+Shift+S`), bare `Ctrl` tap won't pop Start Menu; **Touch Bar** `Media` ↔ `F1–F12` toggle |
 | **Disk & Cleanup** | Reversible fix for **"100% disk after boot"** (`SysMain`, `Windows Search` cache exclusions, logon updaters), safe temp (>24h) & Recycle Bin cleanup, free RAM, startup apps |
@@ -145,7 +151,7 @@ winget install Microsoft.DotNet.SDK.8
 git clone https://github.com/PNT2110/MacTune.git
 cd MacTune
 dotnet build -c Release            # output: bin\Release\net8.0-windows\MacTune.exe
-.\build-release.ps1 -Version 1.1.0 # self-contained zip in .\dist
+.\build-release.ps1 -Version 1.2.0 # self-contained zip in .\dist
 ```
 
 Project layout:
@@ -156,7 +162,11 @@ TrayFlyoutWindow.xaml(.cs)        macOS-style tray quick-controls flyout
 Controls/                         custom controls (real-time LineChart)
 Services/                         hardware & Windows integration (no UI dependencies)
   SmcService, FanController       SMC (PawnIO / AppleSMC / MacHAL) & thermal-smoothed fan control
-  PowerService, Profiles          powercfg wrapper & synced power profiles
+  FanSafetyWatchdog, SelfTest     independent hang watchdog, sleep/resume handoff & 4-case safety test
+  CpuMsrProbe, ThrottleMonitor    MSR + sensor throttling classifier (Thermal, PL1/PL2, EDP, Firmware)
+  CpuLoggerService                UTF-8 CSV performance logger with live min/avg/max session summary
+  PowerService, PowerPlanBackup   powercfg wrapper, automatic pre-change .pow baseline backup & restore
+  HardwareCompatibilityService    Mac model & capability verifier gating hardware writes fail-closed
   AppleKeyboardService            Touch Bar IOCTL & smart Mac shortcut hook (⌘+Tab, ⌘+Q, ⌘+Shift+4)
   BootCampFixesService            reversible audio anti-pop, BT/Wi-Fi stability & natural mouse scroll
   BootOptimizerService            100% boot disk fixes (SysMain, Search exclusions, logon updaters)
@@ -209,7 +219,9 @@ Not affiliated with Apple Inc. Mac, MacBook Pro, Boot Camp, and Touch Bar are tr
 - **🎧 Ổn định Bluetooth & Wi-Fi Broadcom** — khóa Windows tự ngắt nguồn ngầm chip Bluetooth (hết khựng chuột / rớt AirPods sau khi nghỉ) và tắt gom gói `Packet Coalescing` gây giật ping Wi-Fi.
 - **🖱 Cuộn tự nhiên cho chuột rời & Touch Bar 1 chạm** — đảo chiều lăn chuột USB/Bluetooth giống hệt Trackpad macOS; đổi nhanh Touch Bar giữa dãy `Media` và `F1–F12`.
 - **🚀 Chống 100% Disk sau khi mở máy** — tắt nạp dồn 4–5 GB của `SysMain`, hoãn `Windows Search` & tự loại trừ thư mục code/cache (`node_modules`, `.git`, `bin`, `obj`...), hoãn các tác vụ cập nhật chạy dồn lúc đăng nhập.
-- **❄️ Quạt êm & bảo vệ ngủ trong balo** — đường cong quạt làm mượt nhiệt độ theo cả CPU lẫn GPU rời AMD (không bị rồ lên khi i9 vọt nhiệt 1 giây, tự bung 100% ở 95 °C); đồng bộ giờ gập máy / ngủ đông trên cả 3 chế độ và tắt `Wake Timers` tránh máy tự thức dậy nóng ran lúc nửa đêm.
+- **❄️ Quạt êm, Watchdog chống treo & bảo vệ Sleep/Resume** — đường cong quạt làm mượt nhiệt độ theo cả CPU lẫn GPU rời AMD, có luồng **Watchdog độc lập** tự trả quạt về Apple nếu giao diện treo, tự nhả về Auto khi mất driver / vào Sleep, kiểm tra lại phần cứng khi Resume và kèm công cụ **Kiểm thử an toàn quạt 4 tình huống** ngay trong app.
+- **🔬 Chẩn đoán hạ xung đa miền & Ghi nhật ký CSV** — phân biệt rõ **Thermal** (nhiệt nhân / VRM), **Power Limit** (`PL1`/`PL2`), **Current Limit** (`EDP`/`IccMax`) và **Firmware** (`BD PROCHOT` / khóa SMC / củ sạc yếu) khi dữ liệu thanh ghi MSR & cảm biến cho phép; tích hợp **CPU Performance Logger** xuất file `.csv` để đối chiếu trước/sau.
+- **💾 Tự động sao lưu Power Plan & Kiểm tra tương thích phần cứng** — tự động sao lưu nguyên trạng Power Plan (`.pow` + chỉ số AC/DC) trước khi thay đổi để khôi phục 1 chạm; xác minh đúng dòng máy Mac (`T2`, `Pre-T2`, có/không Touch Bar, đèn phím, SMC) trước khi mở quyền ghi xuống phần cứng.
 
 ### Cài đặt (2 bước, không cần cài .NET)
 
