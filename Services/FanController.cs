@@ -67,16 +67,17 @@ public sealed class FanController
     DateTime _engagedAt;
     bool _verified;
     double? _smooth;
+    double? _filteredTemp;
 
     void Engage(FanMode m)
     {
-        if (Mode == FanMode.Auto) { _engagedAt = DateTime.Now; _verified = false; _smooth = null; }
+        if (Mode == FanMode.Auto) { _engagedAt = DateTime.Now; _verified = false; _smooth = null; _filteredTemp = null; }
         Mode = m;
         Directory.CreateDirectory(Path.GetDirectoryName(Marker)!);
         File.WriteAllText(Marker, DateTime.Now.ToString("O"));
     }
 
-    /// <summary>Call every ~2 s with the current CPU temperature.</summary>
+    /// <summary>Call every ~2 s with the hottest CPU/GPU temperature on the shared heatpipe.</summary>
     public void Tick(double? cpuTemp)
     {
         if (Mode == FanMode.Auto) return;
@@ -88,16 +89,22 @@ public sealed class FanController
             return;
         }
 
-        if (cpuTemp >= 95) _overheat = true;
-        else if (cpuTemp < 85) _overheat = false;
+        double rawTemp = cpuTemp.Value;
+        if (rawTemp >= 95) _overheat = true;
+        else if (rawTemp < 85) _overheat = false;
 
-        double want = _overheat ? 1.0 : Mode == FanMode.Curve ? Curve.Percent(cpuTemp.Value) : FixedPercent;
+        // Thermal inertia EMA so 1–2s Turbo spikes don't make the fans surge audibly (bypassed near overheat)
+        double curveTemp = rawTemp >= 92 || _filteredTemp is null
+            ? rawTemp
+            : _filteredTemp.Value + (rawTemp - _filteredTemp.Value) * (rawTemp > _filteredTemp.Value ? 0.35 : 0.20);
+        _filteredTemp = curveTemp;
 
-        // Smooth curve changes so CPU temperature spikes don't make fans surge up and down:
-        // rise quickly (50% of the gap per tick), fall slowly (10%), ignore tiny changes.
+        double want = _overheat ? 1.0 : Mode == FanMode.Curve ? Curve.Percent(curveTemp) : FixedPercent;
+
+        // Smooth RPM changes: gentle ramp up (30%/tick), slow ramp down (12%/tick), ignore <2% jitter
         if (Mode == FanMode.Curve && !_overheat && _smooth is double prev)
         {
-            double k = want > prev ? 0.5 : 0.10;
+            double k = want > prev ? 0.30 : 0.12;
             want = Math.Abs(want - prev) < 0.02 ? prev : prev + (want - prev) * k;
         }
         _smooth = want;

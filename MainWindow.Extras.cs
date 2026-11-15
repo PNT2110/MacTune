@@ -64,14 +64,15 @@ public partial class MainWindow
 
     void LidPreset_Click(object sender, RoutedEventArgs e)
     {
-        // plugged: lid → sleep, hibernate after 3h; battery: lid → sleep, hibernate after 30 min
+        // plugged: lid → sleep, hibernate after 3h; battery: lid → sleep, hibernate after 30 min; disable wake timers
         try
         {
             PowerService.SetLidAction(1, 1);
             PowerService.SetHibernateAfter(180, 30);
+            try { PowerService.SetWakeTimers(0, 0); } catch { }
             LoadLid();
-            LidStatus.Text = "✓ Gập máy = Ngủ; chạy pin sau 30 phút tự Ngủ đông.";
-            ShowToast("Đã bật chống tụt pin khi ngủ");
+            LidStatus.Text = "✓ Gập máy = Ngủ; chạy pin sau 30 phút tự Ngủ đông; đã tắt tự thức ngầm.";
+            ShowToast("Đã bật chống tụt pin & tự thức khi ngủ");
         }
         catch (Exception ex) { LidStatus.Text = "Lỗi: " + ex.Message; }
     }

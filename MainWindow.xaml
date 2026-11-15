@@ -558,9 +558,10 @@
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                         <Border Style="{StaticResource CardBox}">
-                            <CheckBox x:Name="ChkSysMacKeys" ToolTip="Dùng ⌘+C, ⌘+V, ⌘+Z quen tay như macOS" Style="{StaticResource Switch}" Click="SysMacKeys_Click" VerticalAlignment="Center">
+                            <CheckBox x:Name="ChkSysMacKeys" ToolTip="⌘+C/V/Z · ⌘+Tab đổi app · ⌘+Q đóng app · ⌘+Shift+4 chụp màn hình" Style="{StaticResource Switch}" Click="SysMacKeys_Click" VerticalAlignment="Center">
                                 <StackPanel>
                                     <TextBlock Text="⌘  Đảo phím kiểu Mac (Command ↔ Ctrl)" FontSize="14.5" FontWeight="SemiBold"/>
+                                    <TextBlock Style="{StaticResource Muted}" FontSize="11.5" Margin="0,2,0,0" Text="⌘+Tab đổi app · ⌘+Q · ⌘+Shift+4 chụp màn hình"/>
                                 </StackPanel>
                             </CheckBox>
                         </Border>
@@ -579,6 +580,47 @@
                             </DockPanel>
                         </Border>
                     </Grid>
+
+                    <!-- Boot Camp Hardware Fixes (Audio anti-pop, Bluetooth/Wi-Fi stability, Natural mouse scroll, Boot to macOS) -->
+                    <Border Style="{StaticResource CardBox}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,10">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button x:Name="BtnBootMacOs" Content="🍎 Đĩa khởi động macOS" Padding="11,5" FontSize="12" Margin="0,0,8,0" Visibility="Collapsed" Click="BootMacOs_Click"/>
+                                    <Button x:Name="BtnBcFixAll" Style="{StaticResource Primary}" Content="⚡ Tối ưu loa &amp; kết nối" Padding="12,5" FontSize="12" Margin="0" Click="BcFixAll_Click"/>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource CardTitle}" Text="🛠  Sửa lỗi kinh điển Boot Camp" Margin="0" VerticalAlignment="Center"/>
+                            </DockPanel>
+
+                            <UniformGrid Columns="3" Margin="-4,0">
+                                <Border Background="{StaticResource SubtleBg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="12" Padding="12,10" Margin="4,0">
+                                    <CheckBox x:Name="ChkFixAudioPop" ToolTip="Giữ mạch loa thức, không kêu bụp hoặc nuốt 0,5s âm đầu" Style="{StaticResource Switch}" Click="BcFixToggle_Click" VerticalAlignment="Center">
+                                        <StackPanel>
+                                            <TextBlock Text="🔊 Chống bụp &amp; trễ loa" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </CheckBox>
+                                </Border>
+
+                                <Border Background="{StaticResource SubtleBg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="12" Padding="12,10" Margin="4,0">
+                                    <CheckBox x:Name="ChkFixWireless" ToolTip="Chống khựng chuột/tai nghe Bluetooth &amp; giảm giật ping Wi-Fi" Style="{StaticResource Switch}" Click="BcFixToggle_Click" VerticalAlignment="Center">
+                                        <StackPanel>
+                                            <TextBlock Text="🎧 Ổn định BT &amp; Wi-Fi" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </CheckBox>
+                                </Border>
+
+                                <Border Background="{StaticResource SubtleBg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="12" Padding="12,10" Margin="4,0">
+                                    <CheckBox x:Name="ChkNaturalMouse" ToolTip="Đảo chiều lăn chuột USB/Bluetooth giống hệt macOS" Style="{StaticResource Switch}" Click="BcFixToggle_Click" VerticalAlignment="Center">
+                                        <StackPanel>
+                                            <TextBlock Text="🖱 Cuộn chuột tự nhiên" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </CheckBox>
+                                </Border>
+                            </UniformGrid>
+
+                            <TextBlock x:Name="BcFixStatus" Style="{StaticResource Muted}" Margin="2,8,0,0"/>
+                        </StackPanel>
+                    </Border>
 
                     <!-- 2-column Power & Lid timers -->
                     <Grid>

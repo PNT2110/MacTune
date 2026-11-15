@@ -159,7 +159,7 @@ public partial class MainWindow : Window
         var navs = new[] { NavOverview, NavPerf, NavBattery, NavFans, NavAuto, NavClean, NavSystem, NavSettings };
         for (int i = 0; i < pages.Length; i++)
             pages[i].Visibility = navs[i] == sender ? Visibility.Visible : Visibility.Collapsed;
-        if (sender == NavSystem) { _ = RefreshProcessesAsync(); RefreshGpuList(); LoadTimers(); LoadLid(); SyncInputControls(); }
+        if (sender == NavSystem) { _ = RefreshProcessesAsync(); RefreshGpuList(); LoadTimers(); LoadLid(); SyncInputControls(); _ = RefreshBcFixesUiAsync(); }
         if (sender == NavClean) { RefreshStartup(); ShowMemory(); ShowDrives(); _ = RefreshBootOptUiAsync(); }
         if (sender == NavBattery) ShowEstimates();
         if (sender == NavAuto) RefreshRules();
@@ -208,7 +208,14 @@ public partial class MainWindow : Window
             if (_fans is not null)
             {
                 var fc = _fans;
-                await Task.Run(() => fc.Tick(cpuTemp));
+                float? thermalTemp = (cpuTemp, merged.Dgpu?.TempC) switch
+                {
+                    (float c, float g) => Math.Max(c, g),
+                    (float c, null) => c,
+                    (null, float g) => g,
+                    _ => null,
+                };
+                await Task.Run(() => fc.Tick(thermalTemp));
                 FanStatus.Text = fc.Status;
             }
             UpdateTips();
@@ -673,6 +680,8 @@ public partial class MainWindow : Window
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add("Bật/tắt chế độ Họp", null, (_, _) => SetMeeting(!_meeting));
         menu.Items.Add("Đảo phím Mac (⌘ ↔ Ctrl)", null, (_, _) => SetMacKeys(!_keySwap.Enabled));
+        if (BootCampFixesService.CanOpenStartupDisk())
+            menu.Items.Add("Đĩa khởi động macOS…", null, (_, _) => { try { BootCampFixesService.OpenStartupDisk(); } catch { } });
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add("Thoát", null, (_, _) => ExitApplication());
         LocalizeTrayMenu(menu);

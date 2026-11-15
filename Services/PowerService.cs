@@ -53,10 +53,31 @@ public static class PowerService
     {
         if (!PlanExists(guid))
         {
-            Run($"/duplicatescheme {Balanced} {guid}");
+            string basePlan = ActivePlanGuid();
+            if (string.IsNullOrEmpty(basePlan)) basePlan = Balanced;
+            Run($"/duplicatescheme {basePlan} {guid}");
             Run($"/changename {guid} \"MacTune - {name}\" \"Tạo bởi MacTune\"");
         }
         Run($"/setactive {guid}");
+    }
+
+    static void SetAcrossPlans(string sub, string alias, int ac, int dc)
+    {
+        string list = Run("/l");
+        var targets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string active = ActivePlanGuid();
+        if (!string.IsNullOrEmpty(active)) targets.Add(active);
+        foreach (var mt in new[] { MtSilent, MtBalanced, MtPerformance })
+            if (list.Contains(mt, StringComparison.OrdinalIgnoreCase))
+                targets.Add(mt);
+        if (targets.Count == 0) targets.Add("SCHEME_CURRENT");
+
+        foreach (var scheme in targets)
+        {
+            Run($"/setacvalueindex {scheme} {sub} {alias} {ac}");
+            Run($"/setdcvalueindex {scheme} {sub} {alias} {dc}");
+        }
+        Run("/setactive SCHEME_CURRENT");
     }
 
     /// <summary>Reads (AC, DC) setting index on the active plan (including hidden settings, independent of Windows display language).</summary>
@@ -114,28 +135,18 @@ public static class PowerService
         return (a < 0 ? -1 : a / 60, d < 0 ? -1 : d / 60);
     }
 
-    public static void SetScreenOff(int acMin, int dcMin)
-    {
-        Run($"/change monitor-timeout-ac {acMin}");
-        Run($"/change monitor-timeout-dc {dcMin}");
-    }
+    public static void SetScreenOff(int acMin, int dcMin) =>
+        SetAcrossPlans("SUB_VIDEO", "VIDEOIDLE", acMin * 60, dcMin * 60);
 
-    public static void SetSleep(int acMin, int dcMin)
-    {
-        Run($"/change standby-timeout-ac {acMin}");
-        Run($"/change standby-timeout-dc {dcMin}");
-    }
+    public static void SetSleep(int acMin, int dcMin) =>
+        SetAcrossPlans("SUB_SLEEP", "STANDBYIDLE", acMin * 60, dcMin * 60);
 
     // ---------- Lid action & hibernate-after-sleep ----------
     /// <summary>0 = do nothing, 1 = sleep, 2 = hibernate, 3 = shut down.</summary>
     public static (int Ac, int Dc) GetLidAction() => GetSeconds("SUB_BUTTONS", "LIDACTION");
 
-    public static void SetLidAction(int ac, int dc)
-    {
-        Run($"/setacvalueindex SCHEME_CURRENT SUB_BUTTONS LIDACTION {ac}");
-        Run($"/setdcvalueindex SCHEME_CURRENT SUB_BUTTONS LIDACTION {dc}");
-        Run("/setactive SCHEME_CURRENT");
-    }
+    public static void SetLidAction(int ac, int dc) =>
+        SetAcrossPlans("SUB_BUTTONS", "LIDACTION", ac, dc);
 
     /// <summary>Minutes of sleep before switching to hibernate (0 = never).</summary>
     public static (int AcMin, int DcMin) GetHibernateAfter()
@@ -147,9 +158,12 @@ public static class PowerService
     public static void SetHibernateAfter(int acMin, int dcMin)
     {
         if (acMin > 0 || dcMin > 0) EnsureHibernation();
-        Run($"/change hibernate-timeout-ac {acMin}");
-        Run($"/change hibernate-timeout-dc {dcMin}");
+        SetAcrossPlans("SUB_SLEEP", "HIBERNATEIDLE", acMin * 60, dcMin * 60);
     }
+
+    /// <summary>0 = disable wake timers (prevents midnight wake in closed lid/bag), 1 = enable.</summary>
+    public static void SetWakeTimers(int ac, int dc) =>
+        SetAcrossPlans("SUB_SLEEP", "RTCWAKE", ac, dc);
 
     public static bool HibernationAvailable()
     {

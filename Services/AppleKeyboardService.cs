@@ -115,18 +115,37 @@ public static class AppleKeyboardService
 
 /// <summary>
 /// Swaps Left/Right Command (Win) ↔ Left Control on a dedicated high-priority message loop thread
-/// so shortcuts like ⌘+C / ⌘+V / ⌘+Z / ⌘+T work instantly like macOS with zero reboot or UI lag.
+/// so shortcuts like ⌘+C / ⌘+V / ⌘+Z / ⌘+T work instantly like macOS, plus:
+/// - ⌘+Tab → Alt+Tab (app switcher), ⌃+Tab → Ctrl+Tab (browser/editor tab switcher)
+/// - ⌘+Q → Alt+F4 (close window)
+/// - ⌘+Shift+3 / ⌘+Shift+4 → Win+Shift+S (macOS screenshot)
+/// - Bare Left Ctrl tap suppressed so Start Menu never pops up accidentally.
 /// </summary>
 public sealed class MacKeySwapService : IDisposable
 {
     const int WH_KEYBOARD_LL = 13;
     const uint WM_QUIT = 0x0012;
-    const int VK_LWIN = 0x5B;
-    const int VK_RWIN = 0x5C;
-    const int VK_LCONTROL = 0xA2;
+    const uint VK_TAB = 0x09;
+    const uint VK_3 = 0x33;
+    const uint VK_4 = 0x34;
+    const uint VK_Q = 0x51;
+    const uint VK_S = 0x53;
+    const uint VK_LWIN = 0x5B;
+    const uint VK_RWIN = 0x5C;
+    const uint VK_F4 = 0x73;
+    const uint VK_LSHIFT = 0xA0;
+    const uint VK_RSHIFT = 0xA1;
+    const uint VK_LCONTROL = 0xA2;
+    const uint VK_RCONTROL = 0xA3;
+    const uint VK_LMENU = 0xA4;
+    const uint VK_RMENU = 0xA5;
+
     const ushort SC_LCTRL = 0x1D;
+    const ushort SC_S = 0x1F;
+    const ushort SC_LALT = 0x38;
+    const ushort SC_F4 = 0x3E;
     const ushort SC_LWIN = 0x5B;
-    const uint LLKHF_EXTENDED = 0x01;
+
     const uint LLKHF_LOWER_IL_INJECTED = 0x02;
     const uint LLKHF_INJECTED = 0x10;
     const uint LLKHF_UP = 0x80;
@@ -213,7 +232,14 @@ public sealed class MacKeySwapService : IDisposable
     uint _threadId;
     IntPtr _hook;
     volatile bool _enabled;
-    volatile bool _synthCtrlDown, _synthWinDown;
+    volatile bool _physLWin, _physRWin, _physLCtrl, _physLShift, _physRShift, _physLAlt, _physRAlt;
+    volatile bool _cmdTabActive;
+    volatile uint _swallowedVk;
+    volatile bool _synthCtrlDown, _synthWinDown, _synthAltDown, _synthCtrlForTab;
+
+    bool PhysCmd => _physLWin || _physRWin;
+    bool PhysShift => _physLShift || _physRShift;
+    bool PhysAlt => _physLAlt || _physRAlt;
 
     public bool Enabled => _enabled;
 
@@ -284,6 +310,9 @@ public sealed class MacKeySwapService : IDisposable
         }
     }
 
+    static bool IsModifier(uint vk) => vk is VK_LSHIFT or VK_RSHIFT or VK_LMENU or VK_RMENU
+        or VK_LCONTROL or VK_RCONTROL or VK_LWIN or VK_RWIN;
+
     IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
         if (nCode >= 0 && _enabled)
@@ -293,17 +322,115 @@ public sealed class MacKeySwapService : IDisposable
             if ((kb.flags & (LLKHF_INJECTED | LLKHF_LOWER_IL_INJECTED)) == 0)
             {
                 bool isUp = (kb.flags & LLKHF_UP) != 0;
+
+                // Track physical Shift & Option (Alt) passively
+                if (kb.vkCode == VK_LSHIFT) _physLShift = !isUp;
+                else if (kb.vkCode == VK_RSHIFT) _physRShift = !isUp;
+                else if (kb.vkCode == VK_LMENU) _physLAlt = !isUp;
+                else if (kb.vkCode == VK_RMENU) _physRAlt = !isUp;
+
+                // 1) Physical Command (⌘ = LWin / RWin) → Ctrl + macOS combos
                 if (kb.vkCode is VK_LWIN or VK_RWIN)
                 {
-                    _synthCtrlDown = !isUp;
-                    SendKey(VK_LCONTROL, SC_LCTRL, isUp ? KEYEVENTF_KEYUP : 0);
+                    if (kb.vkCode == VK_LWIN) _physLWin = !isUp;
+                    else _physRWin = !isUp;
+
+                    if (!isUp)
+                    {
+                        if (!_cmdTabActive && !_synthCtrlDown)
+                        {
+                            _synthCtrlDown = true;
+                            SendKey((ushort)VK_LCONTROL, SC_LCTRL, 0);
+                        }
+                    }
+                    else if (!PhysCmd)
+                    {
+                        if (_cmdTabActive)
+                        {
+                            _cmdTabActive = false;
+                            if (_synthAltDown) { _synthAltDown = false; SendKey((ushort)VK_LMENU, SC_LALT, KEYEVENTF_KEYUP); }
+                        }
+                        if (_synthCtrlDown) { _synthCtrlDown = false; SendKey((ushort)VK_LCONTROL, SC_LCTRL, KEYEVENTF_KEYUP); }
+                    }
                     return (IntPtr)1;
                 }
+
+                // 2) Physical Left Control (⌃) → deferred Win (prevents accidental Start Menu tap) + ⌃+Tab → Ctrl+Tab
                 if (kb.vkCode == VK_LCONTROL)
                 {
-                    _synthWinDown = !isUp;
-                    SendKey(VK_LWIN, SC_LWIN, KEYEVENTF_EXTENDEDKEY | (isUp ? KEYEVENTF_KEYUP : 0));
+                    _physLCtrl = !isUp;
+                    if (isUp)
+                    {
+                        if (_synthWinDown) { _synthWinDown = false; SendKey((ushort)VK_LWIN, SC_LWIN, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP); }
+                        if (_synthCtrlForTab) { _synthCtrlForTab = false; SendKey((ushort)VK_LCONTROL, SC_LCTRL, KEYEVENTF_KEYUP); }
+                    }
                     return (IntPtr)1;
+                }
+
+                // 3) Swallow matching key-up of a remapped shortcut key (Q / 3 / 4)
+                if (isUp && _swallowedVk != 0 && kb.vkCode == _swallowedVk)
+                {
+                    _swallowedVk = 0;
+                    if (PhysCmd && !_cmdTabActive && !_synthCtrlDown)
+                    {
+                        _synthCtrlDown = true;
+                        SendKey((ushort)VK_LCONTROL, SC_LCTRL, 0);
+                    }
+                    return (IntPtr)1;
+                }
+
+                // 4) Special macOS shortcuts while holding Command (⌘)
+                if (!isUp && PhysCmd)
+                {
+                    // ⌘ + Tab (or ⌘ + Shift + Tab) → Alt + Tab app switcher
+                    if (kb.vkCode == VK_TAB && !PhysAlt)
+                    {
+                        if (!_cmdTabActive)
+                        {
+                            _cmdTabActive = true;
+                            if (_synthCtrlDown) { _synthCtrlDown = false; SendKey((ushort)VK_LCONTROL, SC_LCTRL, KEYEVENTF_KEYUP); }
+                            if (!_synthAltDown) { _synthAltDown = true; SendKey((ushort)VK_LMENU, SC_LALT, 0); }
+                        }
+                        return CallNextHookEx(_hook, nCode, wParam, lParam);
+                    }
+
+                    // ⌘ + Q → Alt + F4 (close window)
+                    if (kb.vkCode == VK_Q && !PhysShift && !PhysAlt && !_cmdTabActive)
+                    {
+                        if (_synthCtrlDown) { _synthCtrlDown = false; SendKey((ushort)VK_LCONTROL, SC_LCTRL, KEYEVENTF_KEYUP); }
+                        SendKey((ushort)VK_LMENU, SC_LALT, 0);
+                        SendKey((ushort)VK_F4, SC_F4, 0);
+                        SendKey((ushort)VK_F4, SC_F4, KEYEVENTF_KEYUP);
+                        SendKey((ushort)VK_LMENU, SC_LALT, KEYEVENTF_KEYUP);
+                        _swallowedVk = VK_Q;
+                        return (IntPtr)1;
+                    }
+
+                    // ⌘ + Shift + 3 / 4 → Win + Shift + S (region screenshot)
+                    if (kb.vkCode is VK_3 or VK_4 && PhysShift && !PhysAlt && !_cmdTabActive)
+                    {
+                        if (_synthCtrlDown) { _synthCtrlDown = false; SendKey((ushort)VK_LCONTROL, SC_LCTRL, KEYEVENTF_KEYUP); }
+                        SendKey((ushort)VK_LWIN, SC_LWIN, KEYEVENTF_EXTENDEDKEY);
+                        SendKey((ushort)VK_S, SC_S, 0);
+                        SendKey((ushort)VK_S, SC_S, KEYEVENTF_KEYUP);
+                        SendKey((ushort)VK_LWIN, SC_LWIN, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP);
+                        _swallowedVk = kb.vkCode;
+                        return (IntPtr)1;
+                    }
+                }
+
+                // 5) Shortcuts while holding Physical Left Control (⌃)
+                if (!isUp && _physLCtrl && !IsModifier(kb.vkCode))
+                {
+                    if (kb.vkCode == VK_TAB && !_synthWinDown)
+                    {
+                        if (!_synthCtrlForTab) { _synthCtrlForTab = true; SendKey((ushort)VK_LCONTROL, SC_LCTRL, 0); }
+                    }
+                    else
+                    {
+                        if (_synthCtrlForTab) { _synthCtrlForTab = false; SendKey((ushort)VK_LCONTROL, SC_LCTRL, KEYEVENTF_KEYUP); }
+                        if (!_synthWinDown) { _synthWinDown = true; SendKey((ushort)VK_LWIN, SC_LWIN, KEYEVENTF_EXTENDEDKEY); }
+                    }
                 }
             }
         }
@@ -322,8 +449,16 @@ public sealed class MacKeySwapService : IDisposable
 
     public void ReleaseSyntheticModifiers()
     {
-        if (_synthCtrlDown) { _synthCtrlDown = false; SendKey(VK_LCONTROL, SC_LCTRL, KEYEVENTF_KEYUP); }
-        if (_synthWinDown) { _synthWinDown = false; SendKey(VK_LWIN, SC_LWIN, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP); }
+        _physLWin = _physRWin = _physLCtrl = _physLShift = _physRShift = _physLAlt = _physRAlt = false;
+        _cmdTabActive = false;
+        _swallowedVk = 0;
+        if (_synthCtrlDown || _synthCtrlForTab)
+        {
+            _synthCtrlDown = _synthCtrlForTab = false;
+            SendKey((ushort)VK_LCONTROL, SC_LCTRL, KEYEVENTF_KEYUP);
+        }
+        if (_synthAltDown) { _synthAltDown = false; SendKey((ushort)VK_LMENU, SC_LALT, KEYEVENTF_KEYUP); }
+        if (_synthWinDown) { _synthWinDown = false; SendKey((ushort)VK_LWIN, SC_LWIN, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP); }
     }
 
     public void Dispose()

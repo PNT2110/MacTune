@@ -33,6 +33,7 @@ public partial class MainWindow
 
         SyncInputControls();
         _ = RefreshBootOptUiAsync();
+        _ = RefreshBcFixesUiAsync();
     }
 
     void DisposeNewFeatures()
@@ -277,6 +278,88 @@ public partial class MainWindow
     void TbMode_Click(object sender, RoutedEventArgs e)
     {
         if (!_syncingNewUi) SetTouchBarFn(RbTbFn.IsChecked == true);
+    }
+
+    // ================= 3b. Boot Camp Hardware Fixes =================
+    async Task RefreshBcFixesUiAsync()
+    {
+        var st = await Task.Run(BootCampFixesService.GetState);
+        _syncingNewUi = true;
+        try
+        {
+            ChkFixAudioPop.IsChecked = st.AudioPopFixed;
+            ChkFixWireless.IsChecked = st.WirelessOptimized;
+            ChkNaturalMouse.IsChecked = st.NaturalMouseWheel;
+            BtnBootMacOs.Visibility = st.CanBootMacOs ? Visibility.Visible : Visibility.Collapsed;
+            BtnBcFixAll.IsEnabled = !(st.AudioPopFixed && st.WirelessOptimized);
+        }
+        finally { _syncingNewUi = false; }
+    }
+
+    async void BcFixToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_syncingNewUi) return;
+        bool wantAudio = ChkFixAudioPop.IsChecked == true;
+        bool wantWireless = ChkFixWireless.IsChecked == true;
+        bool wantMouse = ChkNaturalMouse.IsChecked == true;
+
+        BcFixStatus.Text = "Đang áp dụng…";
+        try
+        {
+            string msg = "";
+            if (sender == ChkFixAudioPop)
+            {
+                int n = await Task.Run(() => BootCampFixesService.SetAudioPopFixed(wantAudio));
+                msg = wantAudio
+                    ? $"✓ Đã khóa ngủ mạch loa ({n} thiết bị) – có hiệu lực trọn vẹn sau khi khởi động lại."
+                    : "Đã trả chế độ tiết kiệm điện loa về mặc định.";
+            }
+            else if (sender == ChkFixWireless)
+            {
+                int n = await Task.Run(() => BootCampFixesService.SetWirelessOptimized(wantWireless));
+                msg = wantWireless
+                    ? $"✓ Đã khóa tắt ngầm Bluetooth & tắt gom gói Wi-Fi ({n} adapter)."
+                    : "Đã trả cài đặt Bluetooth & Wi-Fi về mặc định.";
+            }
+            else if (sender == ChkNaturalMouse)
+            {
+                int n = await Task.Run(() => BootCampFixesService.SetNaturalMouseWheel(wantMouse));
+                msg = wantMouse
+                    ? $"✓ Đã bật cuộn tự nhiên cho {n} chuột rời (rút cắm lại chuột hoặc khởi động lại để nhận)."
+                    : $"Đã trả chiều cuộn mặc định Windows cho {n} chuột rời.";
+            }
+            BcFixStatus.Text = msg;
+            if (msg.Length > 0) ShowToast(msg.TrimStart('✓', ' '));
+        }
+        catch (Exception ex) { BcFixStatus.Text = "Lỗi: " + ex.Message; }
+
+        await RefreshBcFixesUiAsync();
+    }
+
+    async void BcFixAll_Click(object sender, RoutedEventArgs e)
+    {
+        BtnBcFixAll.IsEnabled = false;
+        BcFixStatus.Text = "Đang áp dụng…";
+        try
+        {
+            var (aud, net) = await Task.Run(() =>
+            {
+                int a = BootCampFixesService.SetAudioPopFixed(true);
+                int w = BootCampFixesService.SetWirelessOptimized(true);
+                return (a, w);
+            });
+            BcFixStatus.Text = $"✓ Đã chống bụp loa ({aud} mạch) & ổn định Bluetooth/Wi-Fi ({net} adapter). Khởi động lại máy 1 lần để có hiệu lực trọn vẹn.";
+            ShowToast("Đã bật chống bụp loa & ổn định Bluetooth/Wi-Fi");
+        }
+        catch (Exception ex) { BcFixStatus.Text = "Lỗi: " + ex.Message; }
+
+        await RefreshBcFixesUiAsync();
+    }
+
+    void BootMacOs_Click(object sender, RoutedEventArgs e)
+    {
+        try { BootCampFixesService.OpenStartupDisk(); }
+        catch (Exception ex) { ShowToast("Lỗi: " + ex.Message); }
     }
 
     // ================= 4. Discrete AMD GPU Telemetry =================

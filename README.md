@@ -18,7 +18,7 @@ Fans, CPU power, battery, keyboard light, Mac-style keys and the everyday Boot C
 | **Battery** | Health, cycles, charge / discharge power, time left, learned runtime per profile, Windows battery report |
 | **Automation** | Switch profile when plugging / unplugging, per-app rules (e.g. game → Performance + Max cooling), charge and low-battery alerts |
 | **Disk & Cleanup** | Fix for "100% disk after boot" (SysMain, Search indexing, updater tasks — each reversible), temp files and Recycle Bin cleanup, free RAM, startup apps |
-| **System** | Display brightness, **keyboard backlight**, **⌘ ↔ Ctrl swap**, Touch Bar default row (media / F1–F12), screen-off / sleep / lid / hibernate timers, GPU choice per app, top CPU processes |
+| **System** | Display brightness, **keyboard backlight**, **⌘ ↔ Ctrl** (`⌘+Tab` app switch, `⌘+Q`, `⌘+Shift+4` screenshot), Touch Bar mode, **speaker anti-pop**, **Bluetooth/Wi-Fi lag fix**, **natural mouse scroll**, sleep / lid / hibernate sync, GPU per app |
 | **Everyday** | Tray icon showing CPU temperature, quick-controls flyout, Meeting mode (screen stays on, quiet fans), start with Windows, opens without a UAC prompt, **English / Tiếng Việt** |
 
 ### What it cannot do
@@ -122,7 +122,7 @@ Not affiliated with Apple. Mac, MacBook Pro, Boot Camp and Touch Bar are tradema
 
 ## Tiếng Việt
 
-**MacTune là bảng điều khiển cho máy Mac Intel chạy Windows qua Boot Camp**: quạt, hiệu năng CPU, pin, đèn bàn phím, phím kiểu Mac và các khó chịu thường gặp của Boot Camp, gom trong một app.
+**MacTune là bảng điều khiển cho máy Mac Intel chạy Windows qua Boot Camp**: quạt, hiệu năng CPU, pin, đèn bàn phím, phím kiểu Mac (`⌘+Tab` đổi app, `⌘+Q`, `⌘+Shift+4` chụp ảnh), chống bụp loa, ổn định Bluetooth/Wi-Fi, cuộn chuột tự nhiên và chống 100% Disk lúc mở máy — gom gọn trong một app.
 
 > App mới được thử trên một máy: **MacBook Pro 16" 2019 (MacBookPro16,1) chạy Windows 11**. Máy khác có thể chỉ chạy được một phần.
 
