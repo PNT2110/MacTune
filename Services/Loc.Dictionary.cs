@@ -40,7 +40,7 @@ public static partial class Loc
         ["Dùng ⌘+C, ⌘+V, ⌘+Z quen tay như macOS"] = "Use ⌘+C, ⌘+V, ⌘+Z like on macOS",
         ["⌘+C/V/Z · ⌘+Tab đổi app · ⌘+Q đóng app · ⌘+Shift+4 chụp màn hình"] = "⌘+C/V/Z · ⌘+Tab switch apps · ⌘+Q quit · ⌘+Shift+4 screenshot",
         ["⌘+Tab đổi app · ⌘+Q · ⌘+Shift+4 chụp màn hình"] = "⌘+Tab switch apps · ⌘+Q · ⌘+Shift+4 screenshot",
-        ["Thanh Touch Bar"] = "Touch Bar", ["Giữ phím fn để hiện hàng còn lại"] = "Hold fn for the other row",
+        ["🎛  Thanh Touch Bar"] = "🎛  Touch Bar", ["Thanh Touch Bar"] = "Touch Bar", ["Giữ phím fn để hiện hàng còn lại"] = "Hold fn for the other row",
         ["Hiện F1–F12"] = "Show F1–F12", ["Hiện Media"] = "Show media keys",
         ["Đang hiện F1–F12"] = "Showing F1–F12", ["Đang hiện Media"] = "Showing media keys",
         ["Hàng phím F1–F12"] = "F1–F12 row", ["Thanh Media & Độ sáng"] = "Media & brightness row",

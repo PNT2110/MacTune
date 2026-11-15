@@ -618,7 +618,7 @@
                                 </Border>
                             </UniformGrid>
 
-                            <TextBlock x:Name="BcFixStatus" Style="{StaticResource Muted}" Margin="2,8,0,0"/>
+                            <TextBlock x:Name="BcFixStatus" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="2,8,0,0"/>
                         </StackPanel>
                     </Border>
 
@@ -641,7 +641,7 @@
                                     <ComboBox Grid.Row="2" Grid.Column="1" x:Name="CbSleepAc" Margin="0,4" SelectionChanged="Timers_Changed"/>
                                     <ComboBox Grid.Row="2" Grid.Column="3" x:Name="CbSleepDc" Margin="0,4" SelectionChanged="Timers_Changed"/>
                                 </Grid>
-                                <TextBlock x:Name="TimersStatus" Style="{StaticResource Muted}" Margin="0,6,0,0"/>
+                                <TextBlock x:Name="TimersStatus" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"/>
                             </StackPanel>
                         </Border>
 
@@ -663,7 +663,7 @@
                                     <ComboBox Grid.Row="2" Grid.Column="1" x:Name="CbHibAc" Margin="0,4" SelectionChanged="Lid_Changed"/>
                                     <ComboBox Grid.Row="2" Grid.Column="3" x:Name="CbHibDc" Margin="0,4" SelectionChanged="Lid_Changed"/>
                                 </Grid>
-                                <TextBlock x:Name="LidStatus" Style="{StaticResource Muted}" Margin="0,6,0,0"/>
+                                <TextBlock x:Name="LidStatus" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"/>
                             </StackPanel>
                         </Border>
                     </Grid>

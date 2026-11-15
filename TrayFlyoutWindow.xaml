@@ -1,7 +1,7 @@
 <Window x:Class="MacTune.TrayFlyoutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MacTune Control Center" Width="368" SizeToContent="Height"
+        Title="MacTune Control Center" Width="392" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13"

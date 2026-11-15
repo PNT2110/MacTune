@@ -1,72 +1,142 @@
+<div align="center">
+
 # MacTune
 
-**A control center for Intel Macs running Windows through Boot Camp.**
-Fans, CPU power, battery, keyboard light, Mac-style keys and the everyday Boot Camp annoyances — in one small app.
+**The honest Boot Camp control center for Intel Macs running Windows.**
 
-[Tiếng Việt bên dưới](#tiếng-việt) · [Install](#install) · [Fan control setup](docs/FAN-SETUP.md) · [Build](#build-from-source)
+Fans, CPU power, battery telemetry, keyboard backlight, Mac-style shortcuts, and reversible fixes for the everyday Windows 11 Boot Camp headaches — in one small app.
 
-> **Status:** personal project, developed and tested on one machine: **MacBook Pro 16" 2019 (MacBookPro16,1, T2, i9-9980HK, Radeon Pro 5500M) on Windows 11**.
+[![Platform](https://img.shields.io/badge/Windows-10%20%2F%2011%20(x64)-0078D4?style=flat-square)](#requirements)
+[![Hardware](https://img.shields.io/badge/Intel%20Mac-Boot%20Camp-111827?style=flat-square)](#status)
+[![Self-Contained](https://img.shields.io/badge/.NET%208-Self--Contained-512BD4?style=flat-square)](#install)
+[![Telemetry](https://img.shields.io/badge/Telemetry-None%20(Offline)-10B981?style=flat-square)](#safety)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)](LICENSE)
+
+[**🇻🇳 Tiếng Việt bên dưới**](#tiếng-việt) · [Why MacTune?](#why-mactune) · [Screenshots](#screenshots) · [What it does](#what-it-does) · [Install](#install) · [Fan setup](docs/FAN-SETUP.md) · [Safety](#safety) · [Build](#build-from-source)
+
+</div>
+
+---
+
+![MacTune Control Center Overview](docs/screenshots/overview.png)
+
+> [!IMPORTANT]
+> **Status:** personal project, developed and tested on one machine: **MacBook Pro 16" 2019 (`MacBookPro16,1`, Apple T2, Core i9-9980HK, Radeon Pro 5500M) on Windows 11**.  
 > Other Intel Macs may work partly or not at all. It changes power settings and can drive your fans — read [Safety](#safety) first.
+
+---
+
+## Why MacTune?
+
+Apple stopped updating Boot Camp drivers at Windows 10. Running Windows 11 on an Intel MacBook Pro works well on paper, until you live with the daily friction:
+
+- **Thermals & noise** — Turbo Boost spikes push an i9 to 95 °C in seconds while fans react late, or surge up and down on brief 1-second loads.
+- **100% disk after boot** — `SysMain` preloading 4–5 GB, aggressive `Windows Search` indexing over dev folders, and logon updaters choke Apple's SSD right after sign-in.
+- **Popping speakers & clipped alerts** — Apple's Boot Camp audio driver puts the T2 speaker amp into `D3` sleep after **3 seconds** of silence, causing a faint pop or cutting off the first half-second of notification sounds.
+- **Bluetooth lag & Wi-Fi ping spikes** — Windows powers down the Apple Bluetooth radio on idle and enables Broadcom packet coalescing.
+- **Broken Mac muscle memory** — `⌘+C` / `⌘+V` are on the wrong key, `⌘+Tab` switches browser tabs instead of apps, there is **no `PrintScreen` key** for screenshots, and external USB/Bluetooth mice scroll backwards with no toggle in Windows Settings.
+- **Hot-backpack sleep drain** — Windows wake timers wake a closed MacBook overnight, and changing power profiles resets sleep/hibernate timers.
+
+Generic Windows "optimizer" suites sell subscriptions, fake urgency, and background telemetry while knowing nothing about Apple SMC, T2, Touch Bar, or Boot Camp drivers.
+
+**MacTune follows three strict rules:**
+1. **Honest hardware scope** — shows real sensor/power telemetry and tells you upfront [what Windows on a T2 Mac cannot do](#what-it-cannot-do).
+2. **Safe & reversible** — every Boot Camp tweak backs up original Registry/driver values so a single click restores stock behavior; power profiles live in their own plans without touching Windows defaults.
+3. **Zero bloat, zero network** — self-contained single-folder app, ~0.3% idle CPU, no background services when closed, no analytics, no internet access.
+
+---
+
+## Screenshots
+
+### Fans & SMC Thermal Telemetry
+Dual-fan RPM gauges, thermal-smoothed curves (**Auto / Quiet / Balanced / Max cooling / Fixed**) driven by the hotter of CPU & AMD dGPU, all Apple SMC sensors, and live CPU throttling diagnostics.
+
+![Fans and Heat](docs/screenshots/fans-heat.png)
+
+### System & Reversible Boot Camp Fixes
+One-click **Mac-style keys** (`⌘+C/V/Z`, `⌘+Tab` app switcher, `⌃+Tab` tab switcher, `⌘+Q` close window, `⌘+Shift+4` region screenshot, suppressed bare-`Ctrl` Start Menu popups), **Touch Bar** default row (`Media` vs `F1–F12`), **speaker anti-pop**, **Bluetooth/Wi-Fi stability**, **natural external mouse scrolling**, synced sleep/lid/hibernate timers, and per-app GPU selection.
+
+![System and Boot Camp Fixes](docs/screenshots/system-fixes.png)
+
+### Startup 100% Disk Optimizer & Safe Cleanup
+Reversible 3-part fix for Boot Camp post-boot SSD stalls (`SysMain`, `Windows Search` dev-folder exclusions, logon updater tasks), safe >24h temp cleanup, working-set RAM trim, Apple SSD health fallback, and Task-Manager-compatible startup app toggles.
+
+![Disk and Cleanup](docs/screenshots/cleanup.png)
+
+### Battery Power Flow & Tray Quick Controls
+Live USB-C charger wattage in, whole-system wattage out, net battery charge/discharge rate, learned runtime estimates per profile, plus a **macOS-style tray Control Center flyout** one click away.
+
+<p align="center">
+  <img src="docs/screenshots/battery.png" alt="Battery Telemetry" width="68%" />
+  <img src="docs/screenshots/tray-flyout.png" alt="Tray Quick Controls Flyout" width="29%" />
+</p>
+
+---
 
 ## What it does
 
 | Area | Features |
 |---|---|
-| **Overview** | Live CPU temperature, clock and power, charger input, system draw, battery level, AMD GPU load / VRAM / top apps, 3-minute charts |
-| **Performance** | One-click **Silent / Balanced / Performance** profiles (own power plans, nothing existing is modified). Per power source: Turbo Boost mode, min/max CPU state, EPP, core parking |
-| **Fans & Heat** | Fan RPM, **Auto / Quiet / Balanced / Max cooling** curves or a fixed speed, all SMC temperature sensors, CPU throttling log with the likely reason |
-| **Battery** | Health, cycles, charge / discharge power, time left, learned runtime per profile, Windows battery report |
-| **Automation** | Switch profile when plugging / unplugging, per-app rules (e.g. game → Performance + Max cooling), charge and low-battery alerts |
-| **Disk & Cleanup** | Fix for "100% disk after boot" (SysMain, Search indexing, updater tasks — each reversible), temp files and Recycle Bin cleanup, free RAM, startup apps |
-| **System** | Display brightness, **keyboard backlight**, **⌘ ↔ Ctrl** (`⌘+Tab` app switch, `⌘+Q`, `⌘+Shift+4` screenshot), Touch Bar mode, **speaker anti-pop**, **Bluetooth/Wi-Fi lag fix**, **natural mouse scroll**, sleep / lid / hibernate sync, GPU per app |
-| **Everyday** | Tray icon showing CPU temperature, quick-controls flyout, Meeting mode (screen stays on, quiet fans), start with Windows, opens without a UAC prompt, **English / Tiếng Việt** |
+| **Overview** | Live CPU temperature, clock and power, USB-C charger input (W), system draw (W), battery level, discrete **AMD Radeon Pro** load / temp / power / VRAM / top apps, 3-minute charts |
+| **Performance** | One-click **Silent / Balanced / Performance** profiles (isolated power plans — existing Windows plans untouched). Per power source: Turbo Boost mode, min/max CPU state, EPP, core parking |
+| **Fans & Heat** | Dual-fan RPM, **Auto / Quiet / Balanced / Max cooling** thermal-smoothed curves (tracking `max(CPU, GPU)`) or fixed speed, all SMC temperature sensors, CPU throttling log with likely cause |
+| **Battery** | Health %, cycle count, charger input / system draw / battery net power, time remaining, learned runtime per profile, 1-click Windows HTML battery report |
+| **Boot Camp Fixes** | **Speaker anti-pop** (keeps T2/PortCls amp in `D0`), **Bluetooth & Broadcom Wi-Fi stability** (locks radio power-save & packet coalescing), **Natural mouse scroll** (`FlipFlopWheel`), quick **macOS Startup Disk** launcher |
+| **Mac Input** | Instant **⌘ ↔ Ctrl** swap with native Mac muscle memory: `⌘+Tab` switches apps, `⌃+Tab` switches tabs, `⌘+Q` closes windows, `⌘+Shift+3/4` triggers region screenshot (`Win+Shift+S`), bare `Ctrl` tap won't pop Start Menu; **Touch Bar** `Media` ↔ `F1–F12` toggle |
+| **Disk & Cleanup** | Reversible fix for **"100% disk after boot"** (`SysMain`, `Windows Search` cache exclusions, logon updaters), safe temp (>24h) & Recycle Bin cleanup, free RAM, startup apps |
+| **Automation & Everyday** | Auto-switch profile on AC/battery, per-app profile + fan rules (e.g. game → Performance + Max cooling), 80% charge & low-battery alerts, tray CPU temperature icon, quick-controls flyout, **Meeting mode**, UAC-free desktop/startup launch, **English / Tiếng Việt** |
 
 ### What it cannot do
 
-- **Charge limit (80%)** — not available on T2 Macs: the fan module only allows fan keys to be written. MacTune offers a "battery reached 80%" alert instead.
-- **Undervolting, PL1/PL2 power limits** — locked or not safely reachable on these machines.
-- **SSD S.M.A.R.T.** — Apple's SSD controller does not expose it to Windows; only usage, temperature and Windows' own health status are shown.
-- **Turning the AMD GPU fully off** — Boot Camp has no graphics switching. You can only choose the GPU per app.
+- **Hardware charge limit (80%)** — not available on T2 Macs from Windows: the T2 SMC module only allows fan keys to be written. MacTune offers a configurable "battery reached 80%" alert instead.
+- **Undervolting, PL1/PL2 power limits** — locked by firmware / not safely reachable on T2 Intel Macs.
+- **Full SSD S.M.A.R.T.** — Apple's T2 SSD controller hides standard NVMe SMART attributes from Windows; usage, SMC SSD temperature, and Windows storage health are shown instead.
+- **Turning the AMD dGPU completely off** — Boot Camp runs with the discrete GPU wired active; you can only assign Intel vs AMD GPU per app.
+
+---
 
 ## Requirements
 
-- An Intel Mac with Windows 10 or 11 (64-bit) installed through Boot Camp, with Apple's Boot Camp drivers
+- An Intel Mac with **Windows 10 or 11 (64-bit)** installed through Boot Camp, with Apple's Boot Camp drivers
 - Administrator rights
-- For fan control, CPU power and clock readings: [PawnIO](https://github.com/namazso/PawnIO.Setup) — see [Fan control setup](docs/FAN-SETUP.md)
+- *(Optional)* For fan control, CPU package power, and clock readings on T2 Macs: [PawnIO](https://github.com/namazso/PawnIO.Setup) — see **[docs/FAN-SETUP.md](docs/FAN-SETUP.md)**
 
 ## Install
 
-1. Download `MacTune-x.y.z-win-x64.zip` from the **Releases** page and extract it anywhere.
+1. Download `MacTune-x.y.z-win-x64.zip` from the [**Releases**](https://github.com/PNT2110/MacTune/releases) page and extract it anywhere.
 2. Right-click **`install.ps1`** → **Run with PowerShell**, and accept the administrator prompt.
 
-That's it. MacTune is copied to `C:\Program Files\MacTune`, started, and puts a shortcut on your desktop that opens it without a UAC prompt.
-No .NET installation is needed — the release is self-contained.
+That's it. MacTune is copied to `C:\Program Files\MacTune`, launched, and creates a Desktop shortcut that opens instantly **without a UAC prompt**. No .NET runtime installation is required — releases are self-contained.
 
-If Windows blocks the script ("running scripts is disabled"), open PowerShell in the extracted folder and run:
+If Windows blocks script execution (*"running scripts is disabled"*), open PowerShell in the extracted folder and run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-**Portable use:** you can also just run `MacTune.exe` from the extracted folder.
+- **Portable use:** run `MacTune.exe` directly from the extracted folder (no installation needed).
+- **Uninstall:**
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File "C:\Program Files\MacTune\install.ps1" -Uninstall
+  ```
 
-**Uninstall:** `powershell -ExecutionPolicy Bypass -File "C:\Program Files\MacTune\install.ps1" -Uninstall` (or run the same script from the zip with `-Uninstall`).
+### Optional: fan control (T2 Macs)
 
-### Optional: fan control
+Fan control on T2 Macs (2018–2020) requires an unsigned PawnIO module, which means enabling Windows Test Signing. Because that is a real security and anti-cheat trade-off, it is strictly opt-in: follow **[docs/FAN-SETUP.md](docs/FAN-SETUP.md)**. Every other feature works without it.
 
-Fan control on T2 Macs needs an unsigned driver module, which means turning on Windows Test Signing.
-It is a real security trade-off, so it is opt-in: follow **[docs/FAN-SETUP.md](docs/FAN-SETUP.md)**. Everything else works without it.
+---
 
 ## Safety
 
-- **Fans.** Targets are clamped to each fan's limits; at 95 °C the fans go to maximum; MacTune hands the fans back to Apple on exit, crash, shutdown, or if they stop responding. Still, you are overriding Apple's thermal management — use sensible modes.
-- **Power settings.** Profiles live in three power plans named "MacTune - …". Your existing plans are not edited. Advanced CPU sliders change the *active* plan; "Default" restores Windows defaults.
-- **Reversible tweaks.** Startup apps are disabled the same way Task Manager does it (nothing is deleted). The boot optimizations can each be switched back off.
-- **Cleanup** only deletes temp files older than 24 hours and, if you tick it, the Recycle Bin.
-- **Admin rights.** MacTune runs elevated. The installer puts it in Program Files so that only an administrator can replace the program.
-- No telemetry, no network access.
+- **Fans.** Targets are clamped to each fan's hardware min/max; at **95 °C** fans immediately go to 100%; MacTune hands fans back to Apple automatic control on exit, crash (`fans-manual.flag` recovery), shutdown, lost sensor readings, or unresponsive RPMs. Still, overriding Apple's thermal controller carries inherent risk — use sensible modes.
+- **Power settings.** Profiles live in three dedicated power plans (`MacTune - …`), synced for screen/sleep/lid/hibernate timers and wake-timer protection. Your built-in Windows plans are never modified.
+- **Reversible tweaks.** Audio, Bluetooth, Wi-Fi, and mouse tweaks store `MacTuneBackup_*` snapshots before writing so turning a switch off restores the exact factory state. Startup apps use Windows' own Task Manager `StartupApproved` mechanism (nothing is deleted).
+- **Cleanup.** Only deletes temp files older than 24 hours and, only if ticked, empties the Recycle Bin.
+- **Admin rights & privacy.** Installed under `C:\Program Files\MacTune` so non-admin processes cannot tamper with the binary. **Zero telemetry, zero analytics, zero network connections.**
 
-This software is provided **without any warranty** (see [LICENSE](LICENSE)). You use it at your own risk.
+Provided **without any warranty** (see [LICENSE](LICENSE)). Use at your own risk.
+
+---
 
 ## Build from source
 
@@ -75,79 +145,93 @@ winget install Microsoft.DotNet.SDK.8
 git clone https://github.com/PNT2110/MacTune.git
 cd MacTune
 dotnet build -c Release            # output: bin\Release\net8.0-windows\MacTune.exe
-.\build-release.ps1 -Version 1.0.0 # self-contained zip in .\dist
+.\build-release.ps1 -Version 1.1.0 # self-contained zip in .\dist
 ```
 
 Project layout:
 
-```
-App.xaml, MainWindow*.xaml(.cs)   UI (WPF). MainWindow is split into partial classes by feature
-TrayFlyoutWindow.xaml(.cs)        quick-controls flyout
-Controls/                         small custom controls (line chart)
-Services/                         hardware and Windows access, no UI
-  SmcService, FanController       SMC (PawnIO / AppleSMC / MacHAL back ends) and fan logic
-  PowerService, Profiles          powercfg wrapper and the three profiles
-  SensorService                   LibreHardwareMonitor telemetry
-  Loc, Loc.Dictionary             runtime Vietnamese → English translation
-drivers/                          AppleT2Smc PawnIO module (LGPL, from RPMac) + its source
-docs/                             guides
+```text
+App.xaml, MainWindow*.xaml(.cs)   UI (WPF), split into partial classes by feature
+TrayFlyoutWindow.xaml(.cs)        macOS-style tray quick-controls flyout
+Controls/                         custom controls (real-time LineChart)
+Services/                         hardware & Windows integration (no UI dependencies)
+  SmcService, FanController       SMC (PawnIO / AppleSMC / MacHAL) & thermal-smoothed fan control
+  PowerService, Profiles          powercfg wrapper & synced power profiles
+  AppleKeyboardService            Touch Bar IOCTL & smart Mac shortcut hook (⌘+Tab, ⌘+Q, ⌘+Shift+4)
+  BootCampFixesService            reversible audio anti-pop, BT/Wi-Fi stability & natural mouse scroll
+  BootOptimizerService            100% boot disk fixes (SysMain, Search exclusions, logon updaters)
+  SensorService                   LibreHardwareMonitor CPU & AMD Radeon Pro telemetry
+  Loc, Loc.Dictionary             lossless runtime Vietnamese ↔ English localization
+drivers/                          AppleT2Smc PawnIO module (LGPL, from RPMac) + Pawn source
+docs/                             setup guides & UI screenshots
 ```
 
-The UI is written in Vietnamese; English is produced at runtime from `Services/Loc.Dictionary.cs`. To add or fix a translation, edit that file.
-Diagnostic log: `C:\ProgramData\MacTune\log.txt`. Settings: `C:\ProgramData\MacTune\settings.json`.
+Diagnostic log: `C:\ProgramData\MacTune\log.txt` · Settings: `C:\ProgramData\MacTune\settings.json`.
 
 ## Contributing
 
-Reports from other Mac models are especially welcome — please include the model identifier (e.g. `MacBookPro15,1`), Windows version, and the log file.
-Hardware-writing changes (fans, SMC, HID) should fail closed: verify the key or report exists and is writable before sending anything.
+Reports from other Intel Mac models (`MacBookPro15,x`, `MacBookAir8,x`, `iMac19,x`, `iMac20,x`) are very welcome — please include the model identifier, Windows build, and `C:\ProgramData\MacTune\log.txt`.  
+Any hardware-writing change (SMC, HID, Registry) must **fail closed**: verify the key/device exists and back up original values before writing.
 
 ## Credits
 
-MacTune stands on the work of people who figured out how this hardware talks:
-[RPMac](https://github.com/golirt1/RPMAC) (T2 SMC module, used here under LGPL),
+MacTune builds on the reverse-engineering and open-source work of:
+[RPMac](https://github.com/golirt1/RPMAC) (T2 SMC PawnIO module, LGPL-2.1),
 [PawnIO](https://github.com/namazso/PawnIO.Setup),
 [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor),
 [SimpleMacFan](https://github.com/ozaretskyi/SimpleMacFan),
 [mac-fan-control-windows](https://github.com/charlie754/mac-fan-control-windows),
 [BootCampPerformanceControl](https://github.com/mksolutionsuniversal/BootCampPerformanceControl),
-and the Linux `hid-apple` driver. Details in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+and the Linux `hid-apple` driver. Full notices in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-Not affiliated with Apple. Mac, MacBook Pro, Boot Camp and Touch Bar are trademarks of Apple Inc.
+Not affiliated with Apple Inc. Mac, MacBook Pro, Boot Camp, and Touch Bar are trademarks of Apple Inc.
 
 ## License
 
-[GPL-3.0](LICENSE). The bundled `drivers/AppleT2Smc.*` files are LGPL-2.1-or-later.
+[GPL-3.0-or-later](LICENSE). Bundled `drivers/AppleT2Smc.*` files are licensed under LGPL-2.1-or-later.
 
 ---
 
 ## Tiếng Việt
 
-**MacTune là bảng điều khiển cho máy Mac Intel chạy Windows qua Boot Camp**: quạt, hiệu năng CPU, pin, đèn bàn phím, phím kiểu Mac (`⌘+Tab` đổi app, `⌘+Q`, `⌘+Shift+4` chụp ảnh), chống bụp loa, ổn định Bluetooth/Wi-Fi, cuộn chuột tự nhiên và chống 100% Disk lúc mở máy — gom gọn trong một app.
+**MacTune là bảng điều khiển trung thực, gọn nhẹ cho máy Mac Intel chạy Windows qua Boot Camp**: chỉnh quạt êm, quản lý hiệu năng CPU & GPU rời AMD, theo dõi công suất sạc/xả pin, đèn bàn phím, phím tắt chuẩn phản xạ macOS và sửa dứt điểm các "bệnh kinh điển" của Windows Boot Camp — tất cả gói gọn trong một ứng dụng mã nguồn mở, không quảng cáo, không kết nối mạng.
 
-> App mới được thử trên một máy: **MacBook Pro 16" 2019 (MacBookPro16,1) chạy Windows 11**. Máy khác có thể chỉ chạy được một phần.
+![Giao diện Tổng quan Tiếng Việt](docs/screenshots/overview-vi.png)
 
-### Cài đặt
+> **Trạng thái:** dự án cá nhân, phát triển và kiểm thử trực tiếp trên **MacBook Pro 16" 2019 (`MacBookPro16,1`, chip T2, i9-9980HK, Radeon Pro 5500M) chạy Windows 11**. Các dòng Mac Intel khác có thể hoạt động tốt từng phần hoặc khác biệt cảm biến.
 
-1. Tải file `MacTune-x.y.z-win-x64.zip` ở trang **Releases** rồi giải nén.
-2. Chuột phải **`install.ps1`** → **Run with PowerShell**, bấm **Yes** khi Windows hỏi quyền admin.
+### Những phiền toái Boot Camp được giải quyết
 
-App được cài vào `C:\Program Files\MacTune`, tự mở, và tạo icon trên Desktop (mở không bị hỏi quyền). Không cần cài .NET.
+![Sửa lỗi kinh điển Boot Camp](docs/screenshots/system-fixes-vi.png)
 
-- Đổi ngôn ngữ: **Cài đặt → Ngôn ngữ**.
-- Gỡ cài đặt: chạy `install.ps1 -Uninstall`.
+- **🔊 Chống bụp & trễ tiếng loa MacBook** — giữ mạch khuếch đại `Apple Audio` ở trạng thái thức (`D0`), xóa hiện tượng kêu *tách/bụp* nhẹ hoặc bị nuốt 0,5 giây đầu âm thông báo sau 3 giây im lặng.
+- **⌨️ Phím kiểu Mac đúng phản xạ macOS** — đảo `⌘ ↔ Ctrl` tức thì không cần khởi động lại, hỗ trợ luôn **`⌘ + Tab` đổi ứng dụng**, **`⌃ + Tab` đổi tab trình duyệt**, **`⌘ + Q` đóng cửa sổ**, **`⌘ + Shift + 4` chụp vùng màn hình** (bù cho bàn phím Mac thiếu nút `PrtScn`), và chặn bung nhầm Start Menu khi chạm lẻ phím `Ctrl`.
+- **🎧 Ổn định Bluetooth & Wi-Fi Broadcom** — khóa Windows tự ngắt nguồn ngầm chip Bluetooth (hết khựng chuột / rớt AirPods sau khi nghỉ) và tắt gom gói `Packet Coalescing` gây giật ping Wi-Fi.
+- **🖱 Cuộn tự nhiên cho chuột rời & Touch Bar 1 chạm** — đảo chiều lăn chuột USB/Bluetooth giống hệt Trackpad macOS; đổi nhanh Touch Bar giữa dãy `Media` và `F1–F12`.
+- **🚀 Chống 100% Disk sau khi mở máy** — tắt nạp dồn 4–5 GB của `SysMain`, hoãn `Windows Search` & tự loại trừ thư mục code/cache (`node_modules`, `.git`, `bin`, `obj`...), hoãn các tác vụ cập nhật chạy dồn lúc đăng nhập.
+- **❄️ Quạt êm & bảo vệ ngủ trong balo** — đường cong quạt làm mượt nhiệt độ theo cả CPU lẫn GPU rời AMD (không bị rồ lên khi i9 vọt nhiệt 1 giây, tự bung 100% ở 95 °C); đồng bộ giờ gập máy / ngủ đông trên cả 3 chế độ và tắt `Wake Timers` tránh máy tự thức dậy nóng ran lúc nửa đêm.
 
-### Điều khiển quạt (tùy chọn)
+### Cài đặt (2 bước, không cần cài .NET)
 
-Trên máy có chip T2, chỉnh quạt cần driver PawnIO bản Unrestricted và bật Test Signing của Windows. Việc này **làm giảm bảo mật** và một số game có chống gian lận sẽ không chạy, nên bạn tự quyết định có bật hay không.
-Hướng dẫn từng bước: [docs/FAN-SETUP.md](docs/FAN-SETUP.md) (tiếng Anh) hoặc file `HUONG-DAN-QUAT.txt` trong thư mục app (tiếng Việt). Các tính năng khác không cần bước này.
+1. Tải file `MacTune-x.y.z-win-x64.zip` tại trang [**Releases**](https://github.com/PNT2110/MacTune/releases) và giải nén.
+2. Chuột phải **`install.ps1`** → **Run with PowerShell**, bấm **Yes** khi Windows hỏi quyền Admin.
 
-### Những thứ app không làm được
+App tự cài vào `C:\Program Files\MacTune`, mở lên ngay và tạo icon ngoài Desktop (mở không bị hỏi bảng UAC).
+- **Đổi ngôn ngữ (Việt / Anh):** vào **Cài đặt → Ngôn ngữ**.
+- **Chạy bản Portable:** mở thẳng `MacTune.exe` trong thư mục giải nén.
+- **Gỡ cài đặt:** `powershell -ExecutionPolicy Bypass -File "C:\Program Files\MacTune\install.ps1" -Uninstall`.
 
-- Giới hạn sạc 80% trên máy T2 (thay bằng thông báo khi pin đạt 80%)
-- Undervolt, chỉnh PL1/PL2
-- Đọc S.M.A.R.T. của ổ SSD Apple
-- Tắt hẳn card AMD (chỉ chọn được GPU cho từng app)
+### Điều khiển quạt trên máy chip T2 (tùy chọn)
 
-### An toàn
+Trên Mac có chip T2 (2018–2020), việc ghi tốc độ quạt cần driver PawnIO bản Unrestricted và bật Test Signing của Windows. Vì việc này **làm giảm bảo mật hệ thống** và một số game có anti-cheat (như Valorant) sẽ không chạy, tính năng này hoàn toàn tùy chọn: xem hướng dẫn chi tiết trong `HUONG-DAN-QUAT.txt` (tiếng Việt) hoặc [docs/FAN-SETUP.md](docs/FAN-SETUP.md) (tiếng Anh). Mọi tính năng khác đều chạy bình thường không cần bước này.
 
-Quạt luôn nằm trong giới hạn của từng quạt, tự chạy tối đa khi CPU từ 95 °C, và được trả về cho Apple khi thoát app, app lỗi hoặc tắt máy. App không thu thập dữ liệu và không kết nối mạng. Phần mềm **không kèm bảo hành**, bạn tự chịu rủi ro khi dùng.
+### Những thứ phần cứng không cho phép trên Windows
+
+- **Giới hạn sạc cứng 80% trên máy T2** (thay bằng cảnh báo thông minh khi pin sạc chạm 80%)
+- **Undervolt CPU, mở khóa PL1/PL2** (bị khóa bởi firmware)
+- **Đọc toàn bộ S.M.A.R.T. chuẩn của SSD hàn chết Apple** (hiển thị dung lượng, nhiệt độ SMC và trạng thái sức khỏe từ Windows)
+- **Tắt hoàn toàn nguồn card rời AMD** (Boot Camp nối cứng card rời; chỉ chọn được GPU Intel/AMD cho từng ứng dụng)
+
+### An toàn & Quyền riêng tư
+
+Quạt luôn được kẹp trong ngưỡng RPM tối thiểu/tối đa của từng quạt, tự chạy tối đa khi chạm 95 °C, và tự trả quyền điều khiển về cho Apple khi thoát app, app gặp sự cố hoặc tắt máy. Mọi tinh chỉnh Registry đều lưu bản sao lưu để bật/tắt hoàn tác 100%. Ứng dụng **không thu thập dữ liệu, không quảng cáo, không kết nối Internet** và được cung cấp miễn phí theo giấy phép [GPL-3.0](LICENSE) (**không kèm bảo hành**, bạn tự chịu rủi ro khi sử dụng).
