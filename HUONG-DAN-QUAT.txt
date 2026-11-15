@@ -1,0 +1,59 @@
+HƯỚNG DẪN BẬT ĐIỀU KHIỂN QUẠT CHO MACTUNE (MacBook Pro 16" 2019, chip T2)
+===========================================================================
+
+MacTune dùng module AppleT2Smc của dự án RPMac (https://github.com/golirt1/RPMAC)
+chạy trong driver PawnIO. Module chưa ký số, nên cần:
+  - PawnIO 2.0.1 bản "Unrestricted" (KHÔNG dùng 2.1.0 hoặc 2.2.0 – bị lỗi)
+  - Windows bật chế độ Test Signing
+
+CẢNH BÁO TRƯỚC KHI LÀM
+  * Test Signing + PawnIO Unrestricted làm giảm bảo mật: chương trình độc hại
+    có quyền admin sẽ dễ chạy code ở tầng nhân Windows hơn. Đừng chạy phần mềm lạ
+    bằng quyền admin.
+  * Game có anti-cheat (Valorant, FACEIT, một số game online) sẽ không chạy.
+  * Góc phải dưới màn hình sẽ hiện chữ "Test Mode" – bình thường.
+  * Nếu ổ đĩa đang bật BitLocker: lấy sẵn khóa khôi phục (Recovery Key) trước,
+    vì đổi cấu hình khởi động có thể khiến máy hỏi khóa này.
+
+
+BƯỚC 1 – Bật Test Signing
+  1. Bấm Start, gõ "cmd", chuột phải "Command Prompt" -> Run as administrator.
+  2. Gõ lệnh:      bcdedit /set testsigning on
+  3. Nếu báo "The operation completed successfully" -> khởi động lại máy, sang Bước 2.
+  4. Nếu báo lỗi "protected by Secure Boot policy":
+       - Tắt máy, bật lên và giữ Command (⌘) + R để vào macOS Recovery.
+       - Menu Utilities -> Startup Security Utility.
+       - Secure Boot: chọn "No Security" (hoặc "Medium Security" nếu vẫn chạy được).
+       - Khởi động lại vào Windows, làm lại từ mục 1.
+     (Nếu máy bạn không còn macOS / không vào được Recovery thì dừng ở đây – báo lại cho mình.)
+
+
+BƯỚC 2 – Cài PawnIO 2.0.1 Unrestricted
+  1. Tải: https://github.com/namazso/PawnIO.Setup/releases/download/2.0.1/PawnIO_setup.exe
+  2. (Khuyên làm) Kiểm tra file đúng bản gốc. Mở PowerShell trong thư mục Downloads, gõ:
+         Get-FileHash .\PawnIO_setup.exe
+     Kết quả phải là:
+         3A34B5DF231F10F252C4B50D3C777534B2A2CEC5E1DF9466AB2DCA401C068C44
+     Khác số này -> XÓA FILE, KHÔNG CÀI.
+  3. Mở Command Prompt bằng quyền admin, chuyển tới thư mục Downloads:
+         cd %USERPROFILE%\Downloads
+         PawnIO_setup.exe -install -unrestricted
+  4. Khởi động lại máy.
+
+
+BƯỚC 3 – Dùng
+  1. Thoát các app quạt khác (RPMac, Macs Fan Control) – chỉ 1 app được dùng SMC.
+  2. Mở MacTune -> trang "Quạt & nhiệt". Thấy RPM hai quạt là đã kết nối.
+  3. Chọn chế độ quạt. Bấm "Tự động" để trả lại cho Apple bất cứ lúc nào.
+
+
+GỠ BỎ / TRẢ LẠI NHƯ CŨ
+  1. Trong MacTune chọn quạt "Tự động", rồi thoát MacTune (chuột phải icon khay -> Thoát).
+  2. Settings -> Apps -> Installed apps -> PawnIO -> Uninstall.
+  3. Command Prompt (admin):   bcdedit /set testsigning off
+  4. Nếu đã đổi Secure Boot ở Bước 1: vào macOS Recovery, đặt lại "Full Security".
+  5. Khởi động lại.
+
+Nếu quạt bị kẹt tốc độ cao sau khi app lỗi: mở lại MacTune (nó tự trả quạt về Tự động),
+hoặc reset SMC: tắt máy, giữ Shift(phải) + Option(trái) + Control(trái) 7 giây, rồi giữ thêm
+nút nguồn 7 giây nữa, thả ra, đợi vài giây rồi bật máy.

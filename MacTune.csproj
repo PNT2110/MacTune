@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Product>MacTune</Product>
+    <Description>Control center for Intel Macs running Windows through Boot Camp</Description>
+    <Copyright>GPL-3.0-or-later</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- third-party Touch Bar project lives in touchbar/ and is built separately -->
+    <Compile Remove="touchbar\**" />
+    <None Remove="touchbar\**" />
+    <Page Remove="touchbar\**" />
+    <Content Remove="touchbar\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Avoid WPF/WinForms name clashes; WinForms types are used fully qualified -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="app.ico" />
+    <!-- RPMac's T2 SMC PawnIO module (LGPL-2.1-or-later), source in drivers/AppleT2Smc.p -->
+    <None Include="drivers\AppleT2Smc.bin" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="drivers\AppleT2Smc.p" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="HUONG-DAN-QUAT.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="docs\FAN-SETUP.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+  </ItemGroup>
+
+</Project>

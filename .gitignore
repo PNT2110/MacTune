@@ -1,0 +1,9 @@
+# Build output
+bin/
+obj/
+dist/
+*.user
+.vs/
+
+# Local experiments with third-party Touch Bar projects (not part of MacTune, not redistributable here)
+touchbar/
